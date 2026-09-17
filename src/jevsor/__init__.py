@@ -2,6 +2,7 @@
 
 from jevsor.confidence import confidence_from_distribution, route_band
 from jevsor.contract import Boolean, Choice, Noul, Score
+from jevsor.policy import answer_band, noul_certainty, route_answers
 from jevsor.errors import (
     AuthError,
     JevsorError,
@@ -24,7 +25,10 @@ __all__ = [
     "RefusalError",
     "Score",
     "ValidationError",
+    "answer_band",
     "confidence_from_distribution",
+    "noul_certainty",
+    "route_answers",
     "route_band",
     "__version__",
 ]

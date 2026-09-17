@@ -97,7 +97,13 @@ class Debug(BaseModel):
     model: str
     jevsor_version: str
     fanout: Literal["batch", "isolated"]
+    requested_fanout: str | None = None
     mixed_provenance: bool = False
+    second_harness: bool = False
+    escalated: list[str] = Field(default_factory=list)
+    skipped_speculative: list[str] = Field(default_factory=list)
+    disagreed: list[str] = Field(default_factory=list)
+    verified: list[str] = Field(default_factory=list)
     questions: dict[str, QuestionDebug] = Field(default_factory=dict)
 
 

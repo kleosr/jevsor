@@ -1,8 +1,21 @@
 # Cursor
 
-jevsor ships as an [Agent Plugin](https://agent-plugins.org/plugin-authors): skill + MCP server, no Cursor-only rules/hooks.
+Jevsor is a **decision layer** the Cursor agent calls. It does not replace Cursor's harness.
 
-Launch the server with **uvx**, not pip.
+Supported integration is an [Agent Plugin](https://agent-plugins.org/plugin-authors): skill + MCP (`evaluate`, `route`). No Cursor-only rules or hooks — those already exist natively.
+
+The native loop:
+
+1. The Cursor agent gathers **thin state** with native tools (read, grep, index, terminal).
+2. It calls MCP `evaluate` with Choice / Score / Noul heads (plus speculative heads when useful).
+3. It calls MCP `route` (or `route_band` in Python) and branches in code.
+4. It executes side effects with Cursor tools. Hooks still deny/allow.
+
+Do **not** launch a Cloud Agent or a Task subagent per boolean. Do **not** point `Client(provider="cursor")` at the in-IDE model. The [Cloud Agents API](https://cursor.com/docs/cloud-agent/api/endpoints) and [Cursor SDK](https://cursor.com/docs/sdk/python) run full agents, not raw completions. That path is a last-resort prompted backend and sets `debug.second_harness`.
+
+Cursor Router / Auto routes **agent turns**. It is not a per-question Jevsor router. Leave it alone.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the split, keep/modify table, and unsupported internals.
 
 ## Local load
 
@@ -12,7 +25,7 @@ Launch the server with **uvx**, not pip.
 4. Reload Cursor.
 5. Confirm in **Customize**: skill `jevsor` is listed.
 6. Confirm in **Settings → MCP**: `jevsor` has a green dot.
-7. In chat: ask the agent to `evaluate` a ticket with a Choice and a Noul. Expect Jev-shaped `answers` plus `debug`.
+7. In chat: ask the agent to `evaluate` a ticket with a Choice and a Noul. Expect Jev-shaped `answers` plus `debug`. Optionally call `route` on those answers.
 
 On failure, read the **Output** panel MCP channel before editing server code.
 
@@ -33,5 +46,7 @@ uv run python evals/benchmark.py --check evals/quality_pin.json
 ## Variables
 
 Do not put keys in the plugin. Set `JEVSOR_PROVIDER`, `JEVSOR_MODEL`, and provider keys in the environment or the plugin dashboard `${VAR}` slots.
+
+For in-IDE use, prefer `stub` (tests), local Ollama, or an OpenAI-compatible endpoint. `JEVSOR_PROVIDER=cursor` starts a nested Cloud Agent per `evaluate` and is the wrong default.
 
 Marketplace submission needs a public repo and Cursor review — deferred.
