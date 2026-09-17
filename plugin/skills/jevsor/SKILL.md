@@ -8,29 +8,37 @@ description: >
 
 # jevsor
 
-Reproduce Jev's harness, not TypeSafe's model. Code owns control flow. The model
-answers only narrow common-sense questions over unstructured state.
+Jevsor is a decision layer on top of Cursor, not a second agent. Cursor already
+owns context retrieval, indexing, tools, rules, hooks, and model selection.
+You gather thin state with native tools, then call MCP `evaluate`.
+
+## Native loop
+
+1. **Gather state with Cursor tools** (read, grep, list, terminal). Facts only. Do not pad.
+2. **Ask the narrowest atomic typed questions** in one `evaluate` call: Choice, Score, Noul/Boolean.
+3. Put maybe-needed heads in `speculative` with a `when` gate. Do not make a second agent turn to ask them.
+4. Call MCP `route` (or threshold in code). High → act, mid → confirm, low → human.
+5. **Execute with Cursor tools.** Thresholds and side effects stay out of the prompt.
 
 ## Rules
 
-- Assemble **thin state** first (files already read, diffs, facts). Do not pad.
-- Ask the **narrowest atomic typed questions**: Choice, Score, or Noul/Boolean.
-- Put many independent questions in **one** `evaluate` call. Combine in code.
-- Thresholds live in your code (`route_band`, per-action bars). Not in the prompt.
-- Every answer has `provenance`: `measured` (logprobs) or `prompted` (JSON).
-  Do not average them. If `mixed_provenance` is true, treat the response as mixed.
-- Isolated mode costs N round trips. Batch prompted can cross-talk. See honesty.
-- Do not launch a subagent per boolean. Do not claim Jev latency or calibration.
+- Do not launch a subagent or Cloud Agent per boolean.
+- Do not call `Client(provider="cursor")` from inside Cursor chat. That nests a full Cloud Agent. The in-IDE model is already running; Jevsor is the MCP tool.
+- Do not re-index the repo or re-implement grep/read. Cursor already does that.
+- Do not invent confidence thresholds. Use `route` / `route_band`. Stakes raise the bar.
 - Question **keys are ids only** — never instructions.
+- Every answer has `provenance`: `measured` (logprobs) or `prompted` (JSON). Do not average them. If `mixed_provenance` is true, treat the response as mixed.
+- Isolated mode costs N round trips. Batch prompted can cross-talk. `auto` picks for you.
+- `debug.second_harness` means someone used the Cloud Agents API as a completion backend. Avoid that in-IDE.
+- Do not claim Jev latency, Jev calibration, or a shared KV cache.
 
 ## Tool
 
-Call MCP `evaluate` (stdio server: `uvx --from . --with mcp jevsor-mcp`) with `state` plus a `questions` map. Expect `answers` keyed
-by the same ids, plus `usage` and `debug`.
+Call MCP `evaluate` (stdio server: `uvx --from . --with mcp jevsor-mcp`).
 
 ```json
 {
-  "state": {"ticket": "Payouts failing 3 days"},
+  "state": {"ticket": "Payouts failing 3 days", "diff": "...already read..."},
   "questions": {
     "dept": {
       "type": "choice",
@@ -45,15 +53,21 @@ by the same ids, plus `usage` and `debug`.
       "instructions": "Does this convey urgency?"
     }
   },
-  "provider": "stub",
-  "fanout": "isolated"
+  "speculative": {
+    "severity": {
+      "type": "score",
+      "instructions": "How severe is the outage?",
+      "criteria": ["Cosmetic", "Degraded", "Blocking"]
+    }
+  },
+  "when": {
+    "severity": {"question": "dept", "equals": "tech"}
+  },
+  "fanout": "auto",
+  "escalate": "confirm"
 }
 ```
 
-Route on `confidence` for Choice/Score (Noul has none — use `noul` as P(yes)):
-
-- high → act
-- mid → confirm
-- low → human
+Then `route` the `answers`. If `debug.disagreed` is nonempty, treat those heads as human.
 
 Plot confidence against accuracy on your labels before production thresholds.
