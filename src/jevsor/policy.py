@@ -182,11 +182,21 @@ def answers_disagree(left: Answer, right: Answer) -> bool:
     return True
 
 
-def _ranked(probabilities: Mapping[str, float]) -> tuple[str | None, str | None, float]:
+def _ranked(
+    probabilities: Mapping[str, float],
+    selected: str | None = None,
+) -> tuple[str | None, str | None, float]:
     ordered = sorted(probabilities.items(), key=lambda item: item[1], reverse=True)
-    winner = ordered[0][0] if ordered else None
-    runner_up = ordered[1][0] if len(ordered) > 1 else None
-    return winner, runner_up, raw_margin(probabilities)
+    if selected is None:
+        winner = ordered[0][0] if ordered else None
+        runner_up = ordered[1][0] if len(ordered) > 1 else None
+        return winner, runner_up, raw_margin(probabilities)
+    rest = [(key, mass) for key, mass in ordered if key != selected]
+    runner_up = rest[0][0] if rest else None
+    winner_mass = float(probabilities[selected]) if selected in probabilities else 0.0
+    if not rest:
+        return selected, None, round(winner_mass, 4)
+    return selected, runner_up, round(winner_mass - float(rest[0][1]), 4)
 
 
 def _head_route(
@@ -207,17 +217,16 @@ def _head_route(
         "disagreed": disagreed,
     }
     if isinstance(answer, ChoiceAnswer):
-        winner, runner_up, margin = _ranked(answer.probabilities)
+        winner, runner_up, margin = _ranked(answer.probabilities, selected=answer.choice)
         row.update(
             {
                 "choice": answer.choice,
-                "winner": answer.choice,
+                "winner": winner,
                 "runner_up": runner_up,
                 "margin": margin,
                 "probabilities": dict(answer.probabilities),
             }
         )
-        del winner
     elif isinstance(answer, ScoreAnswer):
         winner, runner_up, margin = _ranked(answer.probabilities)
         row.update(
