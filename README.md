@@ -200,7 +200,7 @@ uvx --from . --with mcp jevsor-mcp
 | --- | --- |
 | [runner.py](src/jevsor/runner.py) | Client loop: auto/batch/isolated, speculative heads, escalate, verify |
 | [schedule.py](src/jevsor/schedule.py) | Deterministic fan-out: prompted batch vs measured isolated |
-| [policy.py](src/jevsor/policy.py) | Bands, gates, disagreement, MCP `route` |
+| [policy.py](src/jevsor/policy.py) | Bands, gates, disagreement, `route_report` envelope, fail-closed degrade |
 | [contract.py](src/jevsor/contract.py) | Choice, Score, Noul schemas and response models |
 | [letter.py](src/jevsor/letter.py) | Single-token letter/digit logprob extraction and softmax normalization |
 | [codecs.py](src/jevsor/codecs.py) | Measured vs prompted decoder with distribution validation |

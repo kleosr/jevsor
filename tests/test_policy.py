@@ -96,8 +96,39 @@ def test_route_answers_mcp_shape() -> None:
     routed = route_answers(answers)
     assert routed["dept"]["band"] == "act"
     assert routed["dept"]["choice"] == "billing"
+    assert routed["dept"]["winner"] == "billing"
+    assert routed["dept"]["runner_up"] == "tech"
     assert routed["urg"]["noul"] == 0.8
+    assert routed["urg"]["winner"] == "yes"
     assert routed["urg"]["band"] == route_band(noul_certainty(0.8))
+
+
+def test_route_report_worst_band_and_disagreement() -> None:
+    from jevsor.policy import fail_closed, route_report
+
+    answers = {
+        "dept": _choice("billing", {"billing": 0.9, "tech": 0.1}, confidence=0.9),
+        "risk": _choice("high", {"high": 0.55, "low": 0.45}, confidence=0.01),
+    }
+    report = route_report(answers)
+    assert report["decision"] == "human"
+    assert report["worst_band"] == "human"
+    assert report["degrade"] is None
+    assert report["routes"]["dept"]["winner"] == "billing"
+
+    forced = route_report(
+        {"dept": _choice("billing", {"billing": 0.95, "tech": 0.05}, confidence=0.9)},
+        disagreed=["dept"],
+    )
+    assert forced["decision"] == "human"
+    assert forced["routes"]["dept"]["disagreed"] is True
+    assert forced["routes"]["dept"]["band"] == "human"
+
+    closed = fail_closed(Exception("mcp down"), status=502)
+    assert closed["decision"] == "human"
+    assert closed["degrade"] == "human"
+    assert closed["reason"] == "provider"
+    assert closed["routes"] == {}
 
 
 def test_parse_gate_rejects_bad_band() -> None:

@@ -104,6 +104,7 @@ class Debug(BaseModel):
     skipped_speculative: list[str] = Field(default_factory=list)
     disagreed: list[str] = Field(default_factory=list)
     verified: list[str] = Field(default_factory=list)
+    measured: bool = False
     questions: dict[str, QuestionDebug] = Field(default_factory=dict)
 
 
