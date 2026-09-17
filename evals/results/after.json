@@ -1,0 +1,63 @@
+{
+  "jevsor_version": "0.1.0",
+  "quality": {
+    "client": {
+      "keys": [
+        "department",
+        "frustration",
+        "is_urgent"
+      ],
+      "types": {
+        "department": "choice",
+        "frustration": "score",
+        "is_urgent": "noul"
+      },
+      "provenances": {
+        "department": "measured",
+        "frustration": "measured",
+        "is_urgent": "measured"
+      },
+      "mixed_provenance": false,
+      "probability_sums": {
+        "department": 1.0,
+        "frustration": 0.99
+      },
+      "nouls": {
+        "is_urgent": 0.48
+      }
+    },
+    "mcp": {
+      "keys": [
+        "department",
+        "frustration",
+        "is_urgent"
+      ],
+      "types": {
+        "department": "choice",
+        "frustration": "score",
+        "is_urgent": "noul"
+      },
+      "provenances": {
+        "department": "measured",
+        "frustration": "measured",
+        "is_urgent": "measured"
+      },
+      "mixed_provenance": false,
+      "probability_sums": {
+        "department": 1.0,
+        "frustration": 0.99
+      },
+      "nouls": {
+        "is_urgent": 0.48
+      }
+    },
+    "ece_by_provenance": {
+      "measured": 0.182,
+      "prompted": 0.75
+    }
+  },
+  "perf": {
+    "median_ms": 1.176,
+    "repeats": 5
+  }
+}

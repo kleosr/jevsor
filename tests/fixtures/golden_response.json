@@ -1,0 +1,32 @@
+{
+  "model": "stub",
+  "answers": {
+    "department": {
+      "type": "choice",
+      "choice": "technical",
+      "probabilities": { "billing": 0.08, "technical": 0.85, "sales": 0.07 },
+      "confidence": 0.82,
+      "provenance": "measured",
+      "truncated": false,
+      "missing_mass": 0.0
+    },
+    "frustration": {
+      "type": "score",
+      "score": 1.4,
+      "probabilities": { "Calm": 0.1, "Frustrated": 0.4, "Very angry": 0.5 },
+      "confidence": 0.35,
+      "provenance": "measured",
+      "truncated": false,
+      "missing_mass": 0.0
+    },
+    "is_urgent": {
+      "type": "noul",
+      "noul": 0.92,
+      "provenance": "measured",
+      "truncated": false,
+      "missing_mass": 0.0
+    }
+  },
+  "usage": { "input_tokens": 312, "output_tokens": 3 },
+  "mixed_provenance": false
+}

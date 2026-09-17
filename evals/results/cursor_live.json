@@ -1,0 +1,296 @@
+{
+  "provider": "cursor",
+  "gateway": "Cursor Cloud Agents API https://api.cursor.com (not Token Harbor)",
+  "models": [
+    {
+      "model": "composer-2.5:fast",
+      "ok": true,
+      "accuracy": 1.0,
+      "hits": 9,
+      "n_questions": 9,
+      "median_ms": 12958.1,
+      "total_ms": 88057.5,
+      "cases": [
+        {
+          "id": "payouts",
+          "ms": 62958.0,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.51
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 1.18,
+              "confidence": 0.28
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.91
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "checkout_502",
+          "ms": 12958.1,
+          "error": null,
+          "answers": {
+            "service": {
+              "ok": true,
+              "type": "choice",
+              "choice": "payments_api",
+              "confidence": 0.44
+            },
+            "rollback": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.9
+            },
+            "severity": {
+              "ok": true,
+              "type": "score",
+              "score": 2.07,
+              "confidence": 0.44
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "invoice_where",
+          "ms": 9517.3,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.83
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.06
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 0.1,
+              "confidence": 0.7
+            }
+          },
+          "provenance": "prompted"
+        }
+      ]
+    },
+    {
+      "model": "grok-4.6",
+      "ok": true,
+      "accuracy": 1.0,
+      "hits": 9,
+      "n_questions": 9,
+      "median_ms": 18146.8,
+      "total_ms": 98820.4,
+      "cases": [
+        {
+          "id": "payouts",
+          "ms": 63306.9,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.41
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 1.19,
+              "confidence": 0.3
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.91
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "checkout_502",
+          "ms": 18146.8,
+          "error": null,
+          "answers": {
+            "service": {
+              "ok": true,
+              "type": "choice",
+              "choice": "payments_api",
+              "confidence": 0.44
+            },
+            "rollback": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.88
+            },
+            "severity": {
+              "ok": true,
+              "type": "score",
+              "score": 2.05,
+              "confidence": 0.41
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "invoice_where",
+          "ms": 13511.0,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.76
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.06
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 0.08,
+              "confidence": 0.74
+            }
+          },
+          "provenance": "prompted"
+        }
+      ]
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "ok": true,
+      "accuracy": 1.0,
+      "hits": 9,
+      "n_questions": 9,
+      "median_ms": 14441.7,
+      "total_ms": 93860.8,
+      "cases": [
+        {
+          "id": "payouts",
+          "ms": 62704.4,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.83
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 1.1,
+              "confidence": 0.44
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.98
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "checkout_502",
+          "ms": 13185.8,
+          "error": null,
+          "answers": {
+            "service": {
+              "ok": true,
+              "type": "choice",
+              "choice": "payments_api",
+              "confidence": 0.77
+            },
+            "rollback": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.98
+            },
+            "severity": {
+              "ok": true,
+              "type": "score",
+              "score": 2.0,
+              "confidence": 0.72
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "invoice_where",
+          "ms": 14441.7,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.9
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.01
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 0.01,
+              "confidence": 0.95
+            }
+          },
+          "provenance": "prompted"
+        }
+      ]
+    },
+    {
+      "model": "gpt-5.6-luna:fast",
+      "ok": false,
+      "accuracy": 0.0,
+      "hits": 0,
+      "n_questions": 9,
+      "median_ms": 2515.1,
+      "total_ms": 9933.6,
+      "cases": [
+        {
+          "id": "payouts",
+          "ms": 5241.3,
+          "error": "ProviderError: {\"error\":{\"code\":\"invalid_model\",\"message\":\"Model 'gpt-5.6-luna' does not match a known variant. Call GET /v1/models to list valid id+params combinations.\"}}"
+        },
+        {
+          "id": "checkout_502",
+          "ms": 2161.5,
+          "error": "ProviderError: {\"error\":{\"code\":\"invalid_model\",\"message\":\"Model 'gpt-5.6-luna' does not match a known variant. Call GET /v1/models to list valid id+params combinations.\"}}"
+        },
+        {
+          "id": "invoice_where",
+          "ms": 2515.1,
+          "error": "ProviderError: {\"error\":{\"code\":\"invalid_model\",\"message\":\"Model 'gpt-5.6-luna' does not match a known variant. Call GET /v1/models to list valid id+params combinations.\"}}"
+        }
+      ]
+    }
+  ],
+  "pick": {
+    "recommended": "composer-2.5:fast",
+    "best_quality": "composer-2.5:fast",
+    "fastest": "composer-2.5:fast",
+    "rule": "highest accuracy; if within one question, pick lowest median_ms"
+  }
+}

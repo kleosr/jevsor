@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jevsor.dev/schemas/boolean.json",
+  "title": "Boolean / Noul question",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "instructions"],
+  "properties": {
+    "type": { "enum": ["noul", "boolean"] },
+    "instructions": { "type": "string", "minLength": 1 },
+    "criteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "true": { "type": ["string", "null"] },
+        "false": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

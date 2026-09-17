@@ -1,0 +1,8 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "jevsor",
+  "version": "0.1.0",
+  "description": "Jev-compatible typed decisions over local and caller-provided models.",
+  "license": "MIT",
+  "keywords": ["jev", "evaluation", "logprobs", "decisions"]
+}

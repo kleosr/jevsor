@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jevsor.dev/schemas/request.json",
+  "title": "jevsor request",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["questions"],
+  "properties": {
+    "state": true,
+    "model": { "type": ["string", "null"] },
+    "questions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "oneOf": [
+          { "$ref": "choice.json" },
+          { "$ref": "score.json" },
+          { "$ref": "boolean.json" }
+        ]
+      }
+    }
+  }
+}

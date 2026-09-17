@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jevsor"
+version = "0.1.0"
+description = "Jev-compatible decision engine over caller-provided models"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "jevsor contributors" }]
+keywords = ["jev", "system-one", "evaluation", "logprobs", "calibration"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+  "httpx>=0.27",
+  "pydantic>=2.0",
+  "tenacity>=8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-asyncio>=0.24",
+  "jsonschema>=4.20",
+]
+mcp = [
+  "mcp>=1.27,<2",
+]
+
+[project.scripts]
+jevsor-mcp = "jevsor.mcp_server:main"
+
+[project.urls]
+Homepage = "https://github.com/kleosr/jevsor"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+jevsor = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["src", "."]
+markers = [
+  "live: hits a real network provider; skipped unless --live",
+]

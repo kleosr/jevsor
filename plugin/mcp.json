@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "jevsor": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        ".",
+        "--with",
+        "mcp>=1.27,<2",
+        "jevsor-mcp"
+      ],
+      "env": {
+        "JEVSOR_PROVIDER": "stub",
+        "JEVSOR_MODEL": "stub"
+      }
+    }
+  }
+}
