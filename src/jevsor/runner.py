@@ -224,6 +224,7 @@ class Client:
             escalated=escalated,
             disagreed=disagreed,
             verified=verified,
+            measured=measured,
         )
 
     def _absorb(
@@ -258,6 +259,7 @@ class Client:
         escalated: list[str],
         disagreed: list[str],
         verified: list[str],
+        measured: bool,
     ) -> Response:
         if response.debug is None:
             return response
@@ -267,6 +269,7 @@ class Client:
         response.debug.escalated = escalated
         response.debug.disagreed = disagreed
         response.debug.verified = verified
+        response.debug.measured = measured
         return response
 
     def _complete(self, **kwargs: Any) -> Completion:

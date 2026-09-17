@@ -7,7 +7,7 @@ from typing import Any
 
 from jevsor.contract import Question
 from jevsor.errors import JevsorError, ValidationError
-from jevsor.policy import route_answers
+from jevsor.policy import fail_closed, route_report
 from jevsor.runner import Client, Fanout
 from jevsor.validate import parse_request
 
@@ -101,20 +101,20 @@ def create_server() -> Any:
                 verify=verify,
             )
         except JevsorError as exc:
-            return {"error": str(exc), "status": exc.status}
+            return fail_closed(exc)
 
     @server.tool()
     def route(
         answers: dict[str, Any],
         low: float = 0.5,
         high: float = 0.8,
+        disagreed: list[str] | None = None,
     ) -> dict[str, Any]:
-        """Map evaluate answers onto act/confirm/human bands. Thresholds stay in code."""
+        """Map evaluate answers to proceed/confirm/human. Pass debug.disagreed when present."""
         try:
-            return {"routes": route_answers(answers, low=low, high=high)}
+            return route_report(answers, low=low, high=high, disagreed=disagreed)
         except (JevsorError, ValueError) as exc:
-            status = getattr(exc, "status", 422)
-            return {"error": str(exc), "status": status}
+            return fail_closed(exc, status=getattr(exc, "status", 422))
 
     return server
 

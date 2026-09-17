@@ -10,6 +10,16 @@ jevsor copies Jev's *application contract*, not TypeSafe's sampler.
 4. **Cost is the caller's.** We do not reproduce $0.042/MTok or 70–500ms. Usage is whatever the provider billed.
 5. **Schema is validated in code.** Jev binds the schema at the sampler. We retry malformed JSON a bounded number of times, then raise.
 6. **Cursor Cloud Agents are not a completion API.** `provider="cursor"` launches a full agent run. Native in-IDE use is MCP `evaluate` from the existing Cursor agent. See [ARCHITECTURE.md](ARCHITECTURE.md).
+7. **Isolated logprobs require a logprob backend.** Cursor's SDK does not expose them. `debug.measured` is about the MCP process's provider, not the in-IDE model.
+8. **The probe cache is not an answer cache.** It remembers whether `(provider, model)` returned logprobs. It does not reuse decisions.
+
+## Averaging vs consensus
+
+Do not average independent distributions (calibration theater). Do detect disagreement (`verify` / `debug.disagreed`) and route those heads to `human`.
+
+## Fail closed
+
+If prompted JSON cannot be repaired, or the provider/MCP is down, the interface is `decision=human` with empty `routes`. We do not emit a fake uniform distribution.
 
 ## Adaptive extras that are still honest
 

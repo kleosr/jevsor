@@ -4,8 +4,16 @@ from __future__ import annotations
 
 from typing import Any, Literal, Mapping
 
-from jevsor.confidence import Band, route_band
+from jevsor.confidence import Band, raw_margin, route_band
 from jevsor.contract import Answer, ChoiceAnswer, NoulAnswer, ScoreAnswer
+
+Decision = Literal["proceed", "confirm", "human"]
+BAND_RANK = {"act": 0, "confirm": 1, "human": 2}
+BAND_TO_DECISION: dict[Band, Decision] = {
+    "act": "proceed",
+    "confirm": "confirm",
+    "human": "human",
+}
 
 EscalateMode = Literal[False, True, "confirm", "human"]
 
@@ -174,29 +182,146 @@ def answers_disagree(left: Answer, right: Answer) -> bool:
     return True
 
 
+def _ranked(probabilities: Mapping[str, float]) -> tuple[str | None, str | None, float]:
+    ordered = sorted(probabilities.items(), key=lambda item: item[1], reverse=True)
+    winner = ordered[0][0] if ordered else None
+    runner_up = ordered[1][0] if len(ordered) > 1 else None
+    return winner, runner_up, raw_margin(probabilities)
+
+
+def _head_route(
+    answer: Answer,
+    *,
+    low: float,
+    high: float,
+    disagreed: bool,
+) -> dict[str, Any]:
+    band = answer_band(answer, low=low, high=high)
+    if disagreed:
+        band = "human"
+    row: dict[str, Any] = {
+        "type": answer.type,
+        "band": band,
+        "certainty": answer_certainty(answer),
+        "provenance": answer.provenance,
+        "disagreed": disagreed,
+    }
+    if isinstance(answer, ChoiceAnswer):
+        winner, runner_up, margin = _ranked(answer.probabilities)
+        row.update(
+            {
+                "choice": answer.choice,
+                "winner": answer.choice,
+                "runner_up": runner_up,
+                "margin": margin,
+                "probabilities": dict(answer.probabilities),
+            }
+        )
+        del winner
+    elif isinstance(answer, ScoreAnswer):
+        winner, runner_up, margin = _ranked(answer.probabilities)
+        row.update(
+            {
+                "score": answer.score,
+                "winner": winner,
+                "runner_up": runner_up,
+                "margin": margin,
+                "probabilities": dict(answer.probabilities),
+            }
+        )
+    else:
+        yes = float(answer.noul)
+        probs = {"yes": yes, "no": round(1.0 - yes, 2)}
+        winner, runner_up, margin = _ranked(probs)
+        row.update(
+            {
+                "noul": answer.noul,
+                "winner": winner,
+                "runner_up": runner_up,
+                "margin": margin,
+                "probabilities": probs,
+            }
+        )
+    return row
+
+
+def worst_band(bands: list[Band]) -> Band:
+    if not bands:
+        return "human"
+    return max(bands, key=lambda band: BAND_RANK[band])
+
+
 def route_answers(
     answers: Mapping[str, Answer] | Mapping[str, Mapping[str, Any]],
     *,
     low: float = 0.5,
     high: float = 0.8,
+    disagreed: list[str] | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """MCP-friendly band map. The agent must not invent thresholds."""
+    """Per-head route map. Prefer `route_report` at the MCP boundary."""
+    flagged = set(disagreed or [])
     routed: dict[str, dict[str, Any]] = {}
     for qid, raw in answers.items():
-        answer = _coerce_answer(raw)
-        certainty = answer_certainty(answer)
-        routed[qid] = {
-            "band": answer_band(answer, low=low, high=high),
-            "certainty": certainty,
-            "type": answer.type,
-        }
-        if isinstance(answer, ChoiceAnswer):
-            routed[qid]["choice"] = answer.choice
-        elif isinstance(answer, ScoreAnswer):
-            routed[qid]["score"] = answer.score
-        elif isinstance(answer, NoulAnswer):
-            routed[qid]["noul"] = answer.noul
+        routed[qid] = _head_route(
+            _coerce_answer(raw),
+            low=low,
+            high=high,
+            disagreed=qid in flagged,
+        )
     return routed
+
+
+def route_report(
+    answers: Mapping[str, Answer] | Mapping[str, Mapping[str, Any]],
+    *,
+    low: float = 0.5,
+    high: float = 0.8,
+    disagreed: list[str] | None = None,
+) -> dict[str, Any]:
+    """Envelope the Cursor agent should consume. Thresholds stay here, not in prompts.
+
+    `decision` is the worst head after disagreement flags:
+    proceed (all act) | confirm (ask the user / gather more) | human.
+    confirm is not a second agent and not `escalate` (that re-asks heads).
+    """
+    flagged = list(disagreed or [])
+    routes = route_answers(answers, low=low, high=high, disagreed=flagged)
+    bands: list[Band] = [row["band"] for row in routes.values()]
+    worst = worst_band(bands)
+    return {
+        "decision": BAND_TO_DECISION[worst],
+        "worst_band": worst,
+        "thresholds": {"low": low, "high": high},
+        "disagreed": flagged,
+        "degrade": None,
+        "routes": routes,
+    }
+
+
+def fail_closed(exc: BaseException, *, status: int | None = None) -> dict[str, Any]:
+    """MCP/agent fallback: never invent a distribution. Decision is human."""
+    code = status if status is not None else int(getattr(exc, "status", 500) or 500)
+    if code == 401:
+        reason = "auth"
+    elif code == 422:
+        reason = "invalid"
+    elif code == 429:
+        reason = "rate_limited"
+    elif code in {502, 503, 504, 529}:
+        reason = "provider"
+    else:
+        reason = "error"
+    return {
+        "error": str(exc),
+        "status": code,
+        "decision": "human",
+        "worst_band": "human",
+        "degrade": "human",
+        "reason": reason,
+        "disagreed": [],
+        "routes": {},
+        "thresholds": {"low": 0.5, "high": 0.8},
+    }
 
 
 def _coerce_answer(raw: Answer | Mapping[str, Any]) -> Answer:

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jevsor.dev/schemas/route.json",
+  "title": "jevsor route report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["decision", "worst_band", "routes"],
+  "properties": {
+    "decision": { "enum": ["proceed", "confirm", "human"] },
+    "worst_band": { "enum": ["act", "confirm", "human"] },
+    "degrade": { "type": ["string", "null"], "enum": ["human", null] },
+    "reason": { "type": "string" },
+    "error": { "type": "string" },
+    "status": { "type": "integer" },
+    "disagreed": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "thresholds": {
+      "type": "object",
+      "properties": {
+        "low": { "type": "number" },
+        "high": { "type": "number" }
+      }
+    },
+    "routes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type", "band", "certainty", "winner"],
+        "properties": {
+          "type": { "enum": ["choice", "score", "noul"] },
+          "band": { "enum": ["act", "confirm", "human"] },
+          "certainty": { "type": "number" },
+          "winner": { "type": ["string", "null"] },
+          "runner_up": { "type": ["string", "null"] },
+          "margin": { "type": "number" },
+          "provenance": { "enum": ["measured", "prompted"] },
+          "disagreed": { "type": "boolean" },
+          "choice": { "type": "string" },
+          "score": { "type": "number" },
+          "noul": { "type": "number" },
+          "probabilities": {
+            "type": "object",
+            "additionalProperties": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}

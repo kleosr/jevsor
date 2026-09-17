@@ -34,6 +34,30 @@ def test_golden_response_matches_schema() -> None:
     assert payload["answers"]["is_urgent"]["noul"] == 0.92
 
 
+def test_route_report_matches_schema() -> None:
+    from jevsor.policy import fail_closed, route_report
+
+    report = route_report(
+        {
+            "department": payload_choice(),
+            "is_urgent": {"type": "noul", "noul": 0.92, "provenance": "prompted"},
+        }
+    )
+    Draft202012Validator(_schema("route.json")).validate(report)
+    closed = fail_closed(Exception("down"), status=502)
+    Draft202012Validator(_schema("route.json")).validate(closed)
+
+
+def payload_choice() -> dict:
+    return {
+        "type": "choice",
+        "choice": "billing",
+        "probabilities": {"billing": 0.9, "tech": 0.1},
+        "confidence": 0.81,
+        "provenance": "prompted",
+    }
+
+
 def test_helpers_build_questions() -> None:
     q = Choice("Which team?", {"billing": "money", "tech": None})
     assert q.type == "choice"

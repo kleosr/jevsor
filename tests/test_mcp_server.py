@@ -113,6 +113,17 @@ async def test_in_memory_list_and_call() -> None:
         assert routed.isError is False
         route_body = json.loads(routed.content[0].text)
         assert "routes" in route_body
+        assert route_body["decision"] in {"proceed", "confirm", "human"}
+        assert route_body["routes"]["u"]["winner"] in {"yes", "no"}
         assert route_body["routes"]["u"]["band"] in {"act", "confirm", "human"}
+        failed = await session.call_tool(
+            "evaluate",
+            {"state": "x", "questions": {}, "provider": "stub"},
+        )
+        assert failed.isError is False
+        fail_body = json.loads(failed.content[0].text)
+        assert fail_body["decision"] == "human"
+        assert fail_body["degrade"] == "human"
+        assert fail_body["routes"] == {}
 
     del mcp
