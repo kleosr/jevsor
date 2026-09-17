@@ -88,6 +88,18 @@ def test_answers_disagree_argmax() -> None:
     )
 
 
+def test_choice_route_runner_up_follows_selected_winner() -> None:
+    # Prompted JSON can keep an explicit choice that is not the probability mode.
+    routed = route_answers(
+        {"dept": _choice("tech", {"billing": 0.6, "tech": 0.3, "sales": 0.1}, confidence=0.2)}
+    )
+    row = routed["dept"]
+    assert row["choice"] == "tech"
+    assert row["winner"] == "tech"
+    assert row["runner_up"] == "billing"
+    assert row["margin"] == pytest.approx(-0.3)
+
+
 def test_route_answers_mcp_shape() -> None:
     answers = {
         "dept": _choice("billing", {"billing": 0.9, "tech": 0.1}, confidence=0.9),
