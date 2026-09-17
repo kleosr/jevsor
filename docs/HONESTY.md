@@ -9,6 +9,11 @@ jevsor copies Jev's *application contract*, not TypeSafe's sampler.
 3. **Uncalibrated until you measure.** There is no RLCD. `confidence` is jevsor's inverse-entropy statistic (`1 - H(p)/log(K)`), labeled as ours because TypeSafe's formula is unpublished. Run `evals/calibration.py` on *your* labels before trusting a threshold. Temperature fitting is reported, never auto-applied.
 4. **Cost is the caller's.** We do not reproduce $0.042/MTok or 70–500ms. Usage is whatever the provider billed.
 5. **Schema is validated in code.** Jev binds the schema at the sampler. We retry malformed JSON a bounded number of times, then raise.
+6. **Cursor Cloud Agents are not a completion API.** `provider="cursor"` launches a full agent run. Native in-IDE use is MCP `evaluate` from the existing Cursor agent. See [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Adaptive extras that are still honest
+
+Gated speculative heads, confidence escalation, and verify/disagreement are deterministic schedules over the same contract. They do not create a shared KV cache, calibrate probabilities, or turn Jevsor into an agent.
 
 ## Truncation
 

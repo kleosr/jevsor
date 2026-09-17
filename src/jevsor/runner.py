@@ -1,4 +1,4 @@
-"""Client: validate → probe → batch or isolated fan-out → normalize."""
+"""Client: validate → probe → batch or isolated fan-out → optional escalate/verify."""
 
 from __future__ import annotations
 
@@ -24,14 +24,23 @@ from jevsor.contract import (
     Usage,
 )
 from jevsor.letter import letter_ok
+from jevsor.policy import (
+    EscalateMode,
+    Gate,
+    answers_disagree,
+    parse_gate,
+    select_escalation,
+    select_speculative,
+)
 from jevsor.prompts import letter_prompt, prompted_prompt, prompted_schema
 from jevsor.providers import Completion, Provider, build_provider
+from jevsor.schedule import RequestedFanout, resolve_fanout
 from jevsor.validate import parse_request, round2, validate_distribution
 from jevsor.confidence import confidence_from_distribution
 from jevsor.contract import ChoiceAnswer
 from jevsor.errors import JevsorError, ProviderError, RateLimitError, ValidationError
 
-Fanout = Literal["batch", "isolated"]
+Fanout = RequestedFanout
 TRANSPORT_ATTEMPTS = 3
 CORRECTIVE_ATTEMPTS = 2
 DEFAULT_CONCURRENCY = 8
@@ -77,6 +86,10 @@ class Client:
         questions: dict[str, Question] | None = None,
         *,
         fanout: Fanout | None = None,
+        speculative: dict[str, Any] | None = None,
+        when: dict[str, Any] | None = None,
+        escalate: EscalateMode | list[str] = False,
+        verify: bool | list[str] = False,
         **payload: Any,
     ) -> Response:
         if questions is not None:
@@ -87,12 +100,35 @@ class Client:
             body = payload
         else:
             raise ValidationError("questions are required")
+        spec_from_body = body.pop("speculative", None) if isinstance(body, dict) else None
+        when_from_body = body.pop("when", None) if isinstance(body, dict) else None
+        escalate_from_body = body.pop("escalate", None) if isinstance(body, dict) else None
+        verify_from_body = body.pop("verify", None) if isinstance(body, dict) else None
         req = parse_request(body)
-        mode = fanout or self.fanout
+        spec_map, gates = _parse_speculative(
+            speculative if speculative is not None else spec_from_body,
+            when if when is not None else when_from_body,
+        )
+        overlap = set(req.questions) & set(spec_map)
+        if overlap:
+            raise ValidationError(f"speculative ids collide with questions: {sorted(overlap)}")
+        requested = fanout or self.fanout
         measured = self._logprobs_ok()
-        if mode == "isolated":
-            return self._isolated(req, measured)
-        return self._batch(req, measured)
+        mode = resolve_fanout(requested, measured=measured, questions=req.questions)
+        if escalate_from_body is not None and escalate is False:
+            escalate = escalate_from_body
+        if verify_from_body is not None and verify is False:
+            verify = verify_from_body
+        return self._decide(
+            req,
+            spec_map,
+            gates,
+            measured=measured,
+            mode=mode,
+            requested=requested,
+            escalate=escalate,
+            verify=verify,
+        )
 
     async def aevaluate(self, *args: Any, **kwargs: Any) -> Response:
         import asyncio
@@ -114,6 +150,125 @@ class Client:
         fallback = default_logprobs(self.provider.name)
         return bool(fallback)
 
+    def _decide(
+        self,
+        req: EvaluateRequest,
+        speculative: dict[str, Question],
+        gates: dict[str, Gate],
+        *,
+        measured: bool,
+        mode: Literal["batch", "isolated"],
+        requested: Fanout,
+        escalate: EscalateMode | list[str],
+        verify: bool | list[str],
+    ) -> Response:
+        skipped: list[str] = []
+        catalog = {**req.questions, **speculative}
+        if mode == "batch":
+            merged = EvaluateRequest(
+                state=req.state,
+                questions={**req.questions, **speculative},
+                model=req.model,
+            )
+            primary = self._prompted_all(merged)
+        else:
+            primary = self._isolated(req, measured)
+            if speculative:
+                run_ids, skipped = select_speculative(speculative, gates, primary.answers)
+                if run_ids:
+                    extra_req = EvaluateRequest(
+                        state=req.state,
+                        questions={qid: speculative[qid] for qid in run_ids},
+                        model=req.model,
+                    )
+                    extra = self._isolated(extra_req, measured)
+                    primary = self._absorb(req, primary, extra, measured)
+        escalated: list[str] = []
+        disagreed: list[str] = []
+        verified: list[str] = []
+        if escalate:
+            ids = select_escalation(primary.answers, escalate)
+            questions = {qid: catalog[qid] for qid in ids if qid in catalog}
+            if questions:
+                second = self._isolated(
+                    EvaluateRequest(state=req.state, questions=questions, model=req.model),
+                    measured,
+                )
+                for qid, answer in second.answers.items():
+                    if qid in primary.answers and answers_disagree(primary.answers[qid], answer):
+                        disagreed.append(qid)
+                primary = self._absorb(req, primary, second, measured, replace=True)
+                escalated = list(questions)
+        if verify:
+            verify_ids = (
+                [qid for qid in verify if qid in primary.answers]
+                if isinstance(verify, list)
+                else list(primary.answers)
+            )
+            questions = {qid: catalog[qid] for qid in verify_ids if qid in catalog}
+            if questions:
+                third = self._isolated(
+                    EvaluateRequest(state=req.state, questions=questions, model=req.model),
+                    measured,
+                )
+                for qid, answer in third.answers.items():
+                    if qid in primary.answers and answers_disagree(primary.answers[qid], answer):
+                        if qid not in disagreed:
+                            disagreed.append(qid)
+                primary = self._absorb(req, primary, third, measured, replace=False)
+                verified = list(questions)
+        return self._with_schedule(
+            primary,
+            requested=requested,
+            skipped=skipped,
+            escalated=escalated,
+            disagreed=disagreed,
+            verified=verified,
+        )
+
+    def _absorb(
+        self,
+        req: EvaluateRequest,
+        base: Response,
+        extra: Response,
+        measured: bool,
+        *,
+        replace: bool = True,
+    ) -> Response:
+        answers = dict(base.answers)
+        if replace:
+            answers.update(extra.answers)
+        usage = base.usage.plus(extra.usage)
+        debug_q = {}
+        if base.debug:
+            debug_q.update(base.debug.questions)
+        if extra.debug and replace:
+            debug_q.update(extra.debug.questions)
+        fanout: Literal["batch", "isolated"] = (
+            base.debug.fanout if base.debug else ("isolated" if measured else "batch")
+        )
+        return self._response(req, answers, usage, None, 1, fanout, debug_q)
+
+    def _with_schedule(
+        self,
+        response: Response,
+        *,
+        requested: Fanout,
+        skipped: list[str],
+        escalated: list[str],
+        disagreed: list[str],
+        verified: list[str],
+    ) -> Response:
+        if response.debug is None:
+            return response
+        response.debug.requested_fanout = requested
+        response.debug.second_harness = self.provider.name == "cursor"
+        response.debug.skipped_speculative = skipped
+        response.debug.escalated = escalated
+        response.debug.disagreed = disagreed
+        response.debug.verified = verified
+        return response
+
     def _complete(self, **kwargs: Any) -> Completion:
         @retry(
             reraise=True,
@@ -132,11 +287,6 @@ class Client:
                 seed=self.seed,
             )
         return call()
-
-    def _batch(self, req: EvaluateRequest, measured: bool) -> Response:
-        if measured and all(letter_ok(q, WIDE_CHOICE) for q in req.questions.values()):
-            return self._isolated(req, True)
-        return self._prompted_all(req)
 
     def _prompted_all(self, req: EvaluateRequest) -> Response:
         schema = prompted_schema(req.questions)
@@ -266,7 +416,7 @@ class Client:
         usage: Usage,
         default_mode: str | None,
         attempts: int,
-        fanout: Fanout,
+        fanout: Literal["batch", "isolated"],
         debug_q: dict[str, QuestionDebug] | None = None,
     ) -> Response:
         provenances = {a.provenance for a in answers.values()}
@@ -297,4 +447,37 @@ class Client:
             mixed_provenance=mixed,
             debug=debug,
         )
+
+
+def _parse_speculative(
+    speculative: Any,
+    when: Any,
+) -> tuple[dict[str, Question], dict[str, Gate]]:
+    if not speculative:
+        return {}, {}
+    if not isinstance(speculative, dict):
+        raise ValidationError("speculative must be an object")
+    gates: dict[str, Gate] = {}
+    if when:
+        if not isinstance(when, dict):
+            raise ValidationError("when must be an object")
+        for qid, raw in when.items():
+            try:
+                gates[str(qid)] = parse_gate(raw)
+            except ValueError as exc:
+                raise ValidationError(str(exc)) from exc
+    cleaned: dict[str, Any] = {}
+    for qid, item in speculative.items():
+        payload = item
+        if isinstance(item, dict) and "when" in item:
+            payload = {key: value for key, value in item.items() if key != "when"}
+            if qid not in gates:
+                try:
+                    gates[str(qid)] = parse_gate(item.get("when"))
+                except ValueError as exc:
+                    raise ValidationError(str(exc)) from exc
+        cleaned[str(qid)] = payload
+    parsed = parse_request({"state": None, "questions": cleaned})
+    return parsed.questions, gates
+
 

@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="#architecture">Architecture</a> •
+  <a href="docs/ARCHITECTURE.md">Architecture</a> •
   <a href="#the-decision-space">Decision Space</a> •
   <a href="#try-it">Quickstart</a> •
   <a href="#use-the-library">Usage</a> •
@@ -40,26 +40,31 @@ One structured evaluation cycle, atomic questions, and code-owned routing.
 
 ```mermaid
 flowchart LR
-  subgraph state[State]
+  subgraph cursor [Cursor native]
+    tools[read / grep / index / hooks]
+  end
+  subgraph state[Jevsor state]
     facts[thin unpadded facts]
     heads[Choice / Score / Noul]
     facts --> heads
   end
   subgraph engine[evaluate]
-    fan[batch or isolated]
-    providers[Ollama / Cursor / stub]
-    fan --> providers
+    fan[auto: batch or isolated]
+    extra[gated speculative / escalate / verify]
+    providers[Ollama / OpenAI-compat / stub]
+    fan --> extra --> providers
   end
   subgraph python[Python]
     posteriors[posteriors and confidence]
     policy[thresholds and side effects]
     posteriors --> policy
   end
+  tools --> facts
   heads --> fan
   providers --> posteriors
 ```
 
-Question keys stay out of the prompt. The model returns likelihoods. Python owns rollback, paging, and hold.
+Question keys stay out of the prompt. The model returns likelihoods. Python owns rollback, paging, and hold. Cursor owns retrieval, tools, and the agent loop. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## The decision space
 
@@ -130,7 +135,7 @@ state = {
     "account_age_days": 800,
 }
 
-with Client(provider="cursor", model="composer-2.5:fast") as client:  # or "ollama", "stub"
+with Client(provider="stub", fanout="auto") as client:  # or "ollama"; MCP inside Cursor
     result = client.evaluate(
         state=state,
         questions={
@@ -187,19 +192,22 @@ uvx --from . --with mcp jevsor-mcp
 - **Keys stay out of the prompt.** Question keys are ids only (`dept`, `rollback`). The model never sees the keys, eliminating label bias and prompt-injection leaks.
 - **Code owns control flow.** Thresholds (`route_band`, cutoffs) and side effects remain strictly in Python, not in model hallucinations.
 - **Strict provenance tracking.** Distinguishes `measured` (token logprobs) from `prompted` (JSON distributions) — never mixes or averages them without flagging `mixed_provenance`.
-- **Zero proprietary lock-in.** Works offline on stubs, locally on Ollama, through OpenAI/vLLM, or via Cursor's Cloud Agents API.
+- **Zero proprietary lock-in.** Works offline on stubs, locally on Ollama, or through OpenAI/vLLM. Inside Cursor, use the MCP plugin — do not nest a Cloud Agent per decision.
 
 ## Small enough to read
 
 | File | Job |
 | --- | --- |
-| [runner.py](src/jevsor/runner.py) | The complete client loop, batch and isolated fan-out, retry policy |
+| [runner.py](src/jevsor/runner.py) | Client loop: auto/batch/isolated, speculative heads, escalate, verify |
+| [schedule.py](src/jevsor/schedule.py) | Deterministic fan-out: prompted batch vs measured isolated |
+| [policy.py](src/jevsor/policy.py) | Bands, gates, disagreement, MCP `route` |
 | [contract.py](src/jevsor/contract.py) | Choice, Score, Noul schemas and response models |
 | [letter.py](src/jevsor/letter.py) | Single-token letter/digit logprob extraction and softmax normalization |
 | [codecs.py](src/jevsor/codecs.py) | Measured vs prompted decoder with distribution validation |
 | [confidence.py](src/jevsor/confidence.py) | Normalized inverse-entropy confidence calculation and three-band router |
-| [mcp_server.py](src/jevsor/mcp_server.py) | FastMCP stdio server for Cursor Agent integration |
-| [cursor_agent.py](src/jevsor/providers/cursor_agent.py) | Native Cursor Cloud Agents API integration |
+| [mcp_server.py](src/jevsor/mcp_server.py) | FastMCP stdio: `evaluate` + `route` |
+| [cursor_agent.py](src/jevsor/providers/cursor_agent.py) | Optional Cloud Agents backend (second harness; not in-IDE native) |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Native Cursor split, keep/modify table, literature |
 | [cursor_bench.py](evals/cursor_bench.py) | Live Cursor model speed and accuracy benchmark |
 | [calibration.py](evals/calibration.py) | Expected Calibration Error (ECE) and temperature-scaling report |
 
@@ -223,7 +231,7 @@ Calibration baseline: ECE is **0.182** on measured logprobs vs **0.750** on prom
 - Jevsor reproduces Jev's *application contract*, not TypeSafe's proprietary sampler or weights.
 - Isolated fan-out is N round trips; batch prompted shares prompt context.
 - Probabilities are uncalibrated until fitted against ground truth with `evals/calibration.py`.
-- Cursor Cloud Agent calls take 9–18s per turn because they execute through an agent sandbox rather than a direct raw-token sampler.
+- Cursor Cloud Agent calls take 9–18s per turn because they execute through an agent sandbox rather than a direct raw-token sampler. That backend is optional and marked `second_harness`.
 
 ## Development
 
