@@ -1,10 +1,40 @@
+<div align="center">
+
 # Jevsor ⚡
 
 **A typed, Jev-compatible decision engine over your models with dynamic action spaces.**
 
-Give it unstructured state. Your model evaluates typed `Choice`, `Score`, and `Noul` questions without ever seeing the question keys. Code owns the control flow, thresholds, and execution.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.10+-3776AB.svg?logo=python&logoColor=white" alt="Python 3.10+"></a>
+  <a href="plugin/skills/jevsor/SKILL.md"><img src="https://img.shields.io/badge/Cursor-Agent%20Plugin-000000.svg" alt="Cursor Agent Plugin"></a>
+  <a href="evals/results/cursor_live.json"><img src="https://img.shields.io/badge/cursor%20bench-9%2F9%20passed-brightgreen.svg" alt="Cursor Bench"></a>
+</p>
 
-**Incident triage to automated PR-hold in 6.4 ms offline, 9/9 on live Cursor models.** One structured evaluation cycle, atomic questions, and code-owned routing.
+<p align="center">
+  <a href="#architecture">Architecture</a> •
+  <a href="#the-decision-space">Decision Space</a> •
+  <a href="#try-it">Quickstart</a> •
+  <a href="#use-the-library">Usage</a> •
+  <a href="#evidence-and-limits">Benchmark</a> •
+  <a href="evals/results/cursor_live.json">Measurements</a> •
+  <a href="src/jevsor/runner.py">Read the loop</a> •
+  <a href="docs/HONESTY.md">Honesty Contract</a>
+</p>
+
+<p align="center">
+Give it unstructured state. Your model evaluates typed <code>Choice</code>, <code>Score</code>, and <code>Noul</code> questions without ever seeing the question keys.<br>
+Code owns the control flow, thresholds, and execution.
+</p>
+
+<p align="center">
+<b>Incident triage to automated PR-hold in 6.4 ms offline, 9/9 on live Cursor models.</b><br>
+One structured evaluation cycle, atomic questions, and code-owned routing.
+</p>
+
+</div>
+
+<br>
 
 ## Architecture
 
@@ -30,8 +60,6 @@ flowchart LR
 ```
 
 Question keys stay out of the prompt. The model returns likelihoods. Python owns rollback, paging, and hold.
-
-[Decision Space](#the-decision-space) · [Benchmark Chart](#evidence-and-limits) · [Measurements](evals/results/cursor_live.json) · [Read the loop](src/jevsor/runner.py) · [Cursor Agent Plugin](plugin/skills/jevsor/SKILL.md) · [Honesty Contract](docs/HONESTY.md)
 
 ## The decision space
 
@@ -179,7 +207,9 @@ uvx --from . --with mcp jevsor-mcp
 
 The offline incident test executes in **6.47 ms** on the deterministic stub client and **3.03 ms** through the MCP stdio pipeline, with bitwise agreement across Client, MCP payload, and CLI Inspector.
 
-![Cursor Model Benchmark](docs/benchmark.png)
+<p align="center">
+  <img src="docs/benchmark.png" alt="Cursor Model Benchmark" width="900" />
+</p>
 
 In our live Cursor Cloud Agents API benchmark across 9 labeled engineering questions (`evals/results/cursor_live.json`):
 - `composer-2.5:fast`: **9/9 (100%) accuracy**, **12.96s** median follow-up latency (**88s** total including cloud container warm-up).
@@ -208,4 +238,8 @@ Tests are offline and deterministic. Quality pins enforce ECE and probability ma
 
 ---
 
-[TypeSafe Jev application contract](https://docs.typesafe.ai/introduction) · [Cursor Agent Plugins](https://agent-plugins.org) · [Model Context Protocol](https://modelcontextprotocol.io)
+<div align="center">
+
+[TypeSafe Jev application contract](https://docs.typesafe.ai/introduction) • [Cursor Agent Plugins](https://agent-plugins.org) • [Model Context Protocol](https://modelcontextprotocol.io)
+
+</div>
