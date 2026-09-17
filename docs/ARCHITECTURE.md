@@ -125,14 +125,16 @@ On Jev, extra questions are almost free in latency. On an LLM:
 | `route_band` | **Keep** | Matches TypeSafe's three-path cookbook; thresholds stay caller-owned. |
 | Stub / Ollama / OpenAI-compat / Gemini / Anthropic | **Keep** | Caller-provided models. |
 | Agent Plugin skill + MCP `evaluate` | **Keep** | The supported Cursor integration. |
-| Capability probe cache | **Keep** | Probe beats the static matrix. |
+| Capability probe cache | **Keep** | Process-local `(provider, model) → logprobs?`. Not an answer cache. |
 | Wide-choice independent P(fit) | **Keep** | Mirrors Jev's high-cardinality 2-stage path. |
 | Honesty docs (no shared KV, no RLCD) | **Keep** | Prevents fake Jev latency/cost claims. |
 | Fan-out `batch` vs `isolated` | **Modify** | Add `auto`. Measured → isolated; prompted → one JSON. Mixed letter/wide no longer dumps the whole batch into prompted. |
 | Speculative heads | **Add** (was example-only) | Batch includes them (Jev-like). Isolated runs them only when `when` gates match. |
 | Confidence escalation | **Add** | Isolated re-ask of confirm/human heads only. Cheap-first for Cursor-class prompted models. |
-| Verify + disagreement | **Add** | Second independent pass flags `debug.disagreed`; does not silently replace. |
-| MCP `route` | **Add** | Stops the agent inventing thresholds. |
+| Verify + disagreement | **Add** | Second independent pass flags `debug.disagreed`; does not silently replace. Consensus detection, not averaging. |
+| MCP `route` envelope | **Modify** | Explicit `decision` / `winner` / `runner_up` / `margin`. Disagreement forces `human`. |
+| Fail-closed degrade | **Add** | Parse/provider/MCP failure → `decision=human`, empty `routes`. No invented distributions. |
+| Answer-reuse / embedding cache | **Reject** | Correctness liability. Probe cache is capability-only. |
 | Cursor Cloud Agents as default “native model” | **Replace** (role) | Still available, but documented as a full agent run (`second_harness`). In-IDE path is MCP-from-agent. |
 | Subagent-per-boolean / second harness | **Remove** (never ship) | Duplicates Cursor and burns latency. |
 | Cursor rules/hooks inside this plugin | **Remove** (still out) | Cursor already enforces them. |
@@ -148,7 +150,101 @@ On Jev, extra questions are almost free in latency. On an LLM:
 6. **Verify (opt-in):** independent pass; disagreement → treat as `human` in caller code.
 7. Cursor tools execute the side effects. Hooks still gate shell/MCP.
 
-Error handling stays fail-closed: transport retries, bounded JSON repair, isolated all-or-nothing, MCP returns `{error, status}` rather than crashing stdio.
+Error handling is fail-closed. See [Degradation](#degradation--failure-chain).
+
+## Isolated logprobs are not Cursor-native
+
+`debug.measured` is true only when the **MCP server's backend** returned `top_logprobs` on a 1-token probe. That backend is stub / Ollama / OpenAI-compatible / llama.cpp / a Gemini probe — **not** the in-IDE Cursor model.
+
+Cursor's public SDK and Cloud Agents API are agent runs, not chat-completions, and they do not document logprobs ([Python SDK](https://cursor.com/docs/sdk/python)). A plugin cannot call Composer/Grok as a letter head. Therefore:
+
+- Isolated measured fan-out is a property of whatever process `jevsor-mcp` talks to.
+- If that process is Cursor Cloud Agents, logprobs are absent → prompted JSON, N agent launches if you isolate. Don't.
+- In the editor, the native path is prompted (or a *separate* logprob provider you configured). Cursor Auto still only routes the surrounding agent turn.
+
+Putting `JEVSOR_PROVIDER=cursor` does not make isolated logprob heads Cursor-native. It breaks the native constraint.
+
+## Probe cache (capability, not answers)
+
+| | Probe cache | Answer cache (rejected) |
+| --- | --- | --- |
+| Key | `(provider, model)` | state + questions |
+| Value | `bool` logprobs supported | a Choice/Score/Noul |
+| Scope | Python process | — |
+| Invalidation | `clear_probe_cache()` or process exit | — |
+
+Same question, same state, two minutes later still costs a model call. Semantic/embedding reuse is rejected: “same state” is not defined well enough for a decision engine.
+
+## Averaging vs consensus
+
+- **Averaging as calibration — forbidden.** Do not mean two provenances, two models, or a measured head with a prompted repair and call it a probability.
+- **Aggregation as consensus — allowed.** `verify` re-asks; `debug.disagreed` lists argmax/magnitude clashes; `route` forces those heads to `human`. The distributions stay intact.
+
+Same model, two context slices: run twice, compare, do not blend.
+
+## Route response schema
+
+MCP `route` returns this envelope (`schemas/route.json`). Per-head `band` stays TypeSafe (`act` / `confirm` / `human`). Top-level `decision` is what the Cursor agent branches on.
+
+```json
+{
+  "decision": "proceed",
+  "worst_band": "act",
+  "degrade": null,
+  "thresholds": {"low": 0.5, "high": 0.8},
+  "disagreed": [],
+  "routes": {
+    "dept": {
+      "type": "choice",
+      "band": "act",
+      "certainty": 0.91,
+      "winner": "billing",
+      "runner_up": "tech",
+      "margin": 0.8,
+      "choice": "billing",
+      "probabilities": {"billing": 0.9, "tech": 0.1},
+      "provenance": "prompted",
+      "disagreed": false
+    }
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `decision` | `proceed` (all act) / `confirm` (ask or gather more) / `human`. Worst head after disagreement flags. |
+| `worst_band` | Same information in TypeSafe band names. |
+| `routes.*.winner` | Selected option, modal score level, or `yes`/`no`. |
+| `routes.*.runner_up` | Second mass. Null if only one bin. |
+| `routes.*.margin` | Winner mass minus runner-up. |
+| `degrade` | `human` when evaluate/route failed. Null on success. |
+
+`confirm` is not `escalate`. Escalation re-asks uncertain heads inside Jevsor. `confirm` means the Cursor agent should check with the user or fetch more state.
+
+Pass `evaluate.debug.disagreed` into `route(disagreed=...)`.
+
+## Degradation / failure chain
+
+Never invent a calibrated distribution.
+
+```
+probe logprobs?  --yes--> isolated letter heads
+                 --no---> prompted JSON (bounded repair)
+parse/provider fail ----> MCP {decision: human, degrade: human, routes: {}}
+MCP unreachable --------> skill: do not fake evaluate; ask the user or label Cursor judgment uncalibrated
+```
+
+| Failure | What happens | Agent action |
+| --- | --- | --- |
+| Backend has no logprobs | Prompted batch (`debug.measured=false`) | Treat as prompted provenance |
+| JSON invalid after 2 repairs | `ValidationError` → `fail_closed` | `decision=human` |
+| Auth / 429 / 502 | `fail_closed` with `reason` | `decision=human` |
+| Isolated sibling fails | All-or-nothing cancel | `decision=human` |
+| MCP server down / tool missing | No Jevsor payload | Do not invent probabilities |
+| `mixed_provenance` | Flag only | Do not average; prefer human if stakes are high |
+| `debug.disagreed` nonempty | `route` forces those heads human | `decision=human` |
+
+There is no heuristic probability (no uniform Choice, no noul=0.5 presented as a model answer). The heuristic is **human**.
 
 ## Using models Cursor already exposes
 

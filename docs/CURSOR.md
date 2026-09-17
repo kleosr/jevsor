@@ -25,7 +25,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the split, keep/modify table, and uns
 4. Reload Cursor.
 5. Confirm in **Customize**: skill `jevsor` is listed.
 6. Confirm in **Settings → MCP**: `jevsor` has a green dot.
-7. In chat: ask the agent to `evaluate` a ticket with a Choice and a Noul. Expect Jev-shaped `answers` plus `debug`. Optionally call `route` on those answers.
+7. In chat: ask the agent to `evaluate` a ticket with a Choice and a Noul, then `route` the answers. Expect `decision` (`proceed` / `confirm` / `human`) plus per-head `winner` / `runner_up`. On tool failure expect `degrade: "human"`, not invented probabilities.
 
 On failure, read the **Output** panel MCP channel before editing server code.
 

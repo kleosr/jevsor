@@ -211,16 +211,19 @@ def test_auto_prompted_is_single_batch_call() -> None:
     assert response.debug is not None
     assert response.debug.fanout == "batch"
     assert response.debug.requested_fanout == "auto"
+    assert response.debug.measured is False
 
 
 def test_auto_measured_is_isolated_calls() -> None:
     stub = StubProvider(logprobs=True)
     with Client(provider=stub, fanout="auto") as client:
-        client.evaluate(
+        response = client.evaluate(
             state="x",
             questions={"a": Noul("A?"), "b": Noul("B?")},
         )
     assert stub.calls == 2
+    assert response.debug is not None
+    assert response.debug.measured is True
 
 
 def test_isolated_speculative_skips_unmet_gate() -> None:

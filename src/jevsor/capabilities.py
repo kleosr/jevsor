@@ -1,4 +1,11 @@
-"""Static defaults plus runtime logprobs probe cache. Probe wins over the matrix."""
+"""Capability matrix plus a process-local logprobs probe cache.
+
+This cache is NOT an answer cache. Key is (provider, model) → bool("returned
+top_logprobs on a 1-token probe"). Scope is the Python process. Invalidation is
+`clear_probe_cache()` or process exit. It never keys on state, questions, or
+embeddings. Reusing *answers* across states is rejected: that is a correctness
+liability, not a token optimization.
+"""
 
 from __future__ import annotations
 
