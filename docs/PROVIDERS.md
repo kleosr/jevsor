@@ -10,7 +10,7 @@ v0.1 matrix. Static rows are *defaults*. A 1-token logprobs probe on first use o
 | `llamacpp` | `Client("llamacpp", model="...", base_url="http://127.0.0.1:8080/v1")` | measured | llama.cpp server. |
 | `gemini` | `Client("gemini", model="gemini-2.5-flash")` | probed | `GEMINI_API_KEY`. 3.x may have withdrawn logprobs → prompted. |
 | `anthropic` | `Client("anthropic", model="claude-sonnet-4-5")` | prompted | No logprobs by vendor design. `ANTHROPIC_API_KEY`. |
-| `cursor` | `Client("cursor", model="composer-2.5")` | prompted | Cursor Cloud Agents API (`CURSOR_API_KEY`, `https://api.cursor.com`). Not logprobs. `composer-2.5:fast` sets the fast param. |
+| `cursor` | `Client("cursor", model="composer-2.5")` | prompted | **Last-resort backend.** Cursor Cloud Agents API (`CURSOR_API_KEY`, `https://api.cursor.com`) launches a full agent, not a logprob sampler. Sets `debug.second_harness`. Prefer MCP `evaluate` inside Cursor. `composer-2.5:fast` sets the fast param. |
 
 Remote `base_url` is opt-in. Keys come from the environment or constructor, never from the repo.
 

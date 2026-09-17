@@ -199,6 +199,191 @@ def test_prompted_choice_without_probability_map() -> None:
     assert blob["dept"]["probabilities"]["billing"] == 0.88
 
 
+def test_auto_prompted_is_single_batch_call() -> None:
+    stub = StubProvider(logprobs=False)
+    with Client(provider=stub, fanout="auto") as client:
+        response = client.evaluate(
+            state="x",
+            questions={"a": Noul("A?"), "b": Noul("B?")},
+        )
+    assert stub.calls == 1
+    assert set(response.answers) == {"a", "b"}
+    assert response.debug is not None
+    assert response.debug.fanout == "batch"
+    assert response.debug.requested_fanout == "auto"
+
+
+def test_auto_measured_is_isolated_calls() -> None:
+    stub = StubProvider(logprobs=True)
+    with Client(provider=stub, fanout="auto") as client:
+        client.evaluate(
+            state="x",
+            questions={"a": Noul("A?"), "b": Noul("B?")},
+        )
+    assert stub.calls == 2
+
+
+def test_isolated_speculative_skips_unmet_gate() -> None:
+    stub = StubProvider(logprobs=True)
+    with Client(provider=stub, fanout="isolated") as client:
+        response = client.evaluate(
+            state="x",
+            questions={"dept": Choice("Which?", {"billing": "pay", "tech": "bug"})},
+            speculative={"sev": Score("severity", ["Low", "High"])},
+            when={"sev": {"question": "dept", "equals": "__never__"}},
+        )
+    assert "dept" in response.answers
+    assert "sev" not in response.answers
+    assert response.debug is not None
+    assert response.debug.skipped_speculative == ["sev"]
+    assert stub.calls == 1
+
+
+def test_isolated_speculative_runs_when_gate_matches() -> None:
+    stub = StubProvider(logprobs=True)
+    with Client(provider=stub, fanout="isolated") as client:
+        first = client.evaluate(
+            state="ticket",
+            questions={"dept": Choice("Which?", {"billing": "pay", "tech": "bug"})},
+        )
+    winner = first.answers["dept"].choice
+    stub2 = StubProvider(logprobs=True)
+    with Client(provider=stub2, fanout="isolated") as client:
+        response = client.evaluate(
+            state="ticket",
+            questions={"dept": Choice("Which?", {"billing": "pay", "tech": "bug"})},
+            speculative={"sev": Score("severity", ["Low", "High"])},
+            when={"sev": {"question": "dept", "equals": winner}},
+        )
+    assert "sev" in response.answers
+    assert response.debug is not None
+    assert response.debug.skipped_speculative == []
+    assert stub2.calls == 2
+
+
+def test_batch_speculative_included_despite_gate() -> None:
+    stub = StubProvider(logprobs=False)
+    with Client(provider=stub, fanout="batch") as client:
+        response = client.evaluate(
+            state="x",
+            questions={"dept": Choice("Which?", {"billing": "pay", "tech": "bug"})},
+            speculative={"sev": Score("severity", ["Low", "High"])},
+            when={"sev": {"question": "dept", "equals": "__never__"}},
+        )
+    assert set(response.answers) == {"dept", "sev"}
+    assert stub.calls == 1
+    assert response.debug is not None
+    assert response.debug.skipped_speculative == []
+
+
+def test_escalate_reasks_only_uncertain() -> None:
+    peaked = {
+        "answers": {
+            "sure": {
+                "type": "choice",
+                "choice": "a",
+                "probabilities": {"a": 0.99, "b": 0.01},
+            },
+            "unsure": {
+                "type": "choice",
+                "choice": "a",
+                "probabilities": {"a": 0.4, "b": 0.6},
+            },
+        }
+    }
+    isolated_unsure = {
+        "answers": {
+            "unsure": {
+                "type": "choice",
+                "choice": "b",
+                "probabilities": {"a": 0.1, "b": 0.9},
+            }
+        }
+    }
+
+    class Scripted(StubProvider):
+        def complete(self, messages, **kwargs):  # type: ignore[no-untyped-def]
+            with self._lock:
+                self.calls += 1
+            schema = kwargs.get("schema") or {}
+            props = schema.get("properties", {}).get("answers", {}).get("properties", {})
+            if set(props) == {"sure", "unsure"}:
+                return Completion(text=json.dumps(peaked), parsed=peaked, input_tokens=8, output_tokens=8)
+            return Completion(
+                text=json.dumps(isolated_unsure),
+                parsed=isolated_unsure,
+                input_tokens=4,
+                output_tokens=4,
+            )
+
+    stub = Scripted(logprobs=False)
+    with Client(provider=stub, fanout="batch") as client:
+        response = client.evaluate(
+            state="x",
+            questions={
+                "sure": Choice("Sure?", {"a": None, "b": None}),
+                "unsure": Choice("Unsure?", {"a": None, "b": None}),
+            },
+            escalate="confirm",
+        )
+    assert stub.calls == 2
+    assert response.debug is not None
+    assert response.debug.escalated == ["unsure"]
+    assert response.answers["unsure"].choice == "b"
+    assert "unsure" in response.debug.disagreed
+
+
+def test_verify_flags_disagreement_without_replacing() -> None:
+    first = {
+        "answers": {
+            "u": {"type": "noul", "noul": 0.2},
+        }
+    }
+    second = {
+        "answers": {
+            "u": {"type": "noul", "noul": 0.9},
+        }
+    }
+
+    class Flip(StubProvider):
+        def complete(self, messages, **kwargs):  # type: ignore[no-untyped-def]
+            with self._lock:
+                self.calls += 1
+                payload = first if self.calls == 1 else second
+            return Completion(text=json.dumps(payload), parsed=payload, input_tokens=3, output_tokens=3)
+
+    stub = Flip(logprobs=False)
+    with Client(provider=stub, fanout="batch") as client:
+        response = client.evaluate(
+            state="x",
+            questions={"u": Noul("Y?")},
+            verify=True,
+        )
+    assert response.answers["u"].noul == 0.2
+    assert response.debug is not None
+    assert response.debug.verified == ["u"]
+    assert response.debug.disagreed == ["u"]
+
+
+def test_cursor_provider_name_sets_second_harness() -> None:
+    stub = StubProvider(logprobs=False)
+    stub.name = "cursor"
+    with Client(provider=stub, fanout="batch") as client:
+        response = client.evaluate(state="x", questions={"u": Noul("Y?")})
+    assert response.debug is not None
+    assert response.debug.second_harness is True
+
+
+def test_speculative_key_collision_rejected() -> None:
+    with Client("stub") as client:
+        with pytest.raises(ValidationError):
+            client.evaluate(
+                state="x",
+                questions={"u": Noul("Y?")},
+                speculative={"u": Noul("also?")},
+            )
+
+
 @pytest.mark.live
 def test_live_ollama_optional() -> None:
     pytest.importorskip("httpx")

@@ -1,4 +1,10 @@
-"""Cursor Cloud Agents API prompted provider. Not logprobs, not Token Harbor."""
+"""Cursor Cloud Agents API prompted provider.
+
+This is a last-resort backend, not native Cursor model inference.
+The Cloud Agents API launches a full agent run (tools, sandbox, polling).
+In-IDE Jevsor usage should call MCP `evaluate` from the existing Cursor
+agent after it has gathered state with native tools.
+"""
 
 from __future__ import annotations
 
