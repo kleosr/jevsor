@@ -9,6 +9,7 @@ import pytest
 
 from jevsor.errors import ValidationError
 from jevsor.mcp_server import evaluate_payload
+from jevsor.policy import route_answers
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -32,6 +33,8 @@ def test_evaluate_tool_offline() -> None:
     assert result["answers"]["dept"]["type"] == "choice"
     assert result["answers"]["urg"]["type"] == "noul"
     assert "error" not in result
+    routed = route_answers(result["answers"])
+    assert routed["dept"]["band"] in {"act", "confirm", "human"}
 
 
 def test_evaluate_tool_validation_error() -> None:
@@ -92,6 +95,7 @@ async def test_in_memory_list_and_call() -> None:
         tools = await session.list_tools()
         names = [t.name for t in tools.tools]
         assert "evaluate" in names
+        assert "route" in names
         called = await session.call_tool(
             "evaluate",
             {
@@ -105,5 +109,10 @@ async def test_in_memory_list_and_call() -> None:
         text = called.content[0].text
         body = json.loads(text)
         assert body["answers"]["u"]["type"] == "noul"
+        routed = await session.call_tool("route", {"answers": body["answers"]})
+        assert routed.isError is False
+        route_body = json.loads(routed.content[0].text)
+        assert "routes" in route_body
+        assert route_body["routes"]["u"]["band"] in {"act", "confirm", "human"}
 
     del mcp
