@@ -17,13 +17,16 @@ if str(ROOT) not in sys.path:
 from jevsor import Client, Choice, Noul, Score
 from jevsor.errors import JevsorError
 
-# Cursor product models this account can actually run via the SDK.
-# composer-2.5:fast is the product default speed variant.
+# Cloud Agents catalog is account-specific (GET /v1/models). These ids are the
+# prompted second-harness sweep, not a 70ms decision layer.
+# grok-4.6 effort: low | medium | high | xhigh (extra-high aliases to xhigh).
 MODELS = [
     "composer-2.5:fast",
-    "grok-4.6",
-    "gpt-5.6-sol",
-    "gpt-5.6-luna:fast",
+    "composer-2.5:fast=false",
+    "grok-4.6:low",
+    "grok-4.6:medium",
+    "grok-4.6:high",
+    "grok-4.6:xhigh",
 ]
 
 
