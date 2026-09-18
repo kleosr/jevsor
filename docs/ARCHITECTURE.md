@@ -125,7 +125,7 @@ On Jev, extra questions are almost free in latency. On an LLM:
 | `route_band` | **Keep** | Matches TypeSafe's three-path cookbook; thresholds stay caller-owned. |
 | Stub / Ollama / OpenAI-compat / Gemini / Anthropic | **Keep** | Caller-provided models. |
 | Agent Plugin skill + MCP `evaluate` | **Keep** | The supported Cursor integration. |
-| Capability probe cache | **Keep** | Process-local `(provider, model) → logprobs?`. Not an answer cache. |
+| Capability probe cache | **Keep** | Process-local SHA-256 of `(provider, model, endpoint) → logprobs?`. Not an answer cache. Include the versioned model id. |
 | Wide-choice independent P(fit) | **Keep** | Mirrors Jev's high-cardinality 2-stage path. |
 | Honesty docs (no shared KV, no RLCD) | **Keep** | Prevents fake Jev latency/cost claims. |
 | Fan-out `batch` vs `isolated` | **Modify** | Add `auto`. Measured → isolated; prompted → one JSON. Mixed letter/wide no longer dumps the whole batch into prompted. |
@@ -168,10 +168,14 @@ Putting `JEVSOR_PROVIDER=cursor` does not make isolated logprob heads Cursor-nat
 
 | | Probe cache | Answer cache (rejected) |
 | --- | --- | --- |
-| Key | `(provider, model)` | state + questions |
+| Key | SHA-256 prefix of `(provider, model, endpoint)` | state + questions |
 | Value | `bool` logprobs supported | a Choice/Score/Noul |
-| Scope | Python process | — |
-| Invalidation | `clear_probe_cache()` or process exit | — |
+| Scope | **MCP server process** (stdio child Cursor spawned), not the Cursor chat session | — |
+| Invalidation | `clear_probe_cache()`, process exit, or a different endpoint/model string | — |
+
+A long-lived MCP process may reuse the boolean across chat turns. That is intended: the value is a capability bit. A session restart usually respawns MCP and rebuilds the cache.
+
+The model string must include any version or variant the catalog exposes (`grok-4.6` vs `grok-4.6:high`). If a host silently swaps weights behind the same id, the bit can go stale — pin versioned ids when the catalog offers them.
 
 Same question, same state, two minutes later still costs a model call. Semantic/embedding reuse is rejected: “same state” is not defined well enough for a decision engine.
 
@@ -181,6 +185,8 @@ Same question, same state, two minutes later still costs a model call. Semantic/
 - **Aggregation as consensus — allowed.** `verify` re-asks; `debug.disagreed` lists argmax/magnitude clashes; `route` forces those heads to `human`. The distributions stay intact.
 
 Same model, two context slices: run twice, compare, do not blend.
+
+**Why human, not a stronger model:** disagreement is ambiguity or an underspecified question, not “not enough parameters.” Escalating to a larger model yields another opinion. Only a human can add the missing state or rewrite the head. Do not “optimize” `disagreed` into `escalate`.
 
 ## Route response schema
 
@@ -219,7 +225,7 @@ MCP `route` returns this envelope (`schemas/route.json`). Per-head `band` stays 
 | `routes.*.margin` | Winner mass minus runner-up. |
 | `degrade` | `human` when evaluate/route failed. Null on success. |
 
-`confirm` is not `escalate`. Escalation re-asks uncertain heads inside Jevsor. `confirm` means the Cursor agent should check with the user or fetch more state.
+`confirm` is not `escalate`. Escalation re-asks uncertain heads inside Jevsor. `confirm` means the Cursor agent should check with the user or fetch more state. The agent-side contract (`proceed` / `confirm` / `human`, degrade-by-risk) is binding and lives in [CURSOR.md](CURSOR.md).
 
 Pass `evaluate.debug.disagreed` into `route(disagreed=...)`.
 

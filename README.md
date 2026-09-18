@@ -13,10 +13,12 @@
 
 <p align="center">
   <a href="docs/ARCHITECTURE.md">Architecture</a> •
+  <a href="docs/CURSOR.md">Agent contract</a> •
   <a href="#the-decision-space">Decision Space</a> •
   <a href="#try-it">Quickstart</a> •
   <a href="#use-the-library">Usage</a> •
   <a href="#evidence-and-limits">Benchmark</a> •
+  <a href="docs/BENCHMARKS.md">Beat-Jev metrics</a> •
   <a href="evals/results/cursor_live.json">Measurements</a> •
   <a href="src/jevsor/runner.py">Read the loop</a> •
   <a href="docs/HONESTY.md">Honesty Contract</a>
@@ -123,7 +125,7 @@ Connect your own provider:
 - **Offline Stub:** zero credentials required, 100% deterministic test fixtures.
 - **Local Ollama:** `OLLAMA_BASE_URL=http://127.0.0.1:11434/v1` (measured single-token logprobs).
 - **OpenAI-compatible / vLLM:** `OPENAI_API_KEY=...` and `OPENAI_BASE_URL=...`.
-- **Cursor Cloud API:** `CURSOR_API_KEY=crsr_...` (runs `composer-2.5:fast`, `grok-4.6`, or `gpt-5.6-sol`).
+- **Cursor Cloud API:** `CURSOR_API_KEY=crsr_...` (prompted second harness: `composer-2.5:fast`, `grok-4.6:medium:fast`, …). Not a 70 ms sampler.
 
 ## Use the library
 
@@ -205,10 +207,15 @@ uvx --from . --with mcp jevsor-mcp
 | [letter.py](src/jevsor/letter.py) | Single-token letter/digit logprob extraction and softmax normalization |
 | [codecs.py](src/jevsor/codecs.py) | Measured vs prompted decoder with distribution validation |
 | [confidence.py](src/jevsor/confidence.py) | Normalized inverse-entropy confidence calculation and three-band router |
+| [calibrate.py](src/jevsor/calibrate.py) | Opt-in temperature scaling; does not change argmax |
 | [mcp_server.py](src/jevsor/mcp_server.py) | FastMCP stdio: `evaluate` + `route` |
 | [cursor_agent.py](src/jevsor/providers/cursor_agent.py) | Optional Cloud Agents backend (second harness; not in-IDE native) |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Native Cursor split, keep/modify table, literature |
-| [cursor_bench.py](evals/cursor_bench.py) | Live Cursor model speed and accuracy benchmark |
+| [CURSOR.md](docs/CURSOR.md) | Agent `proceed`/`confirm`/`human` contract, degrade classes, measured backends |
+| [BENCHMARKS.md](docs/BENCHMARKS.md) | Independent metrics, holdout, Pareto |
+| [LIMITATIONS.md](docs/LIMITATIONS.md) | Hard constraints vs Jev's published numbers |
+| [PROMPT.md](docs/PROMPT.md) | Beat-Jev loop pins |
+| [cursor_bench.py](evals/cursor_bench.py) | Live Cursor Cloud Agents sweep (second harness) |
 | [calibration.py](evals/calibration.py) | Expected Calibration Error (ECE) and temperature-scaling report |
 
 ## Evidence and limits
@@ -219,11 +226,16 @@ The offline incident test executes in **6.47 ms** on the deterministic stub clie
   <img src="docs/benchmark.png" alt="Cursor Model Benchmark" width="900" />
 </p>
 
-In our live Cursor Cloud Agents API benchmark across 9 labeled engineering questions (`evals/results/cursor_live.json`):
-- `composer-2.5:fast`: **9/9 (100%) accuracy**, **12.96s** median follow-up latency (**88s** total including cloud container warm-up).
-- `gpt-5.6-sol`: **9/9 (100%) accuracy**, **14.44s** median follow-up latency, highest confidence peaks (0.83–0.90).
-- `grok-4.6`: **9/9 (100%) accuracy**, **18.15s** median follow-up latency.
-- `gpt-5.6-luna:fast`: rejected due to invalid param variant.
+In our live Cursor Cloud Agents API benchmark across 9 labeled engineering questions:
+
+Prior file `evals/results/cursor_live.json`:
+- `composer-2.5:fast`: **9/9**, **12.96s** median follow-up (**88s** total including warm-up).
+- `gpt-5.6-sol`: **9/9**, **14.44s** median.
+- `grok-4.6`: **9/9**, **18.15s** median.
+
+Iteration-1 effort sweep `evals/results/cursor_grok_composer_sweep.json` (nativeness 0; cannot meet 70 ms):
+- Grok 4.6 Fast at **low / medium / high / xhigh**: **9/9** each. Fastest median: `grok-4.6:medium:fast` **10.6s**.
+- Composer 2.5 Fast and standard: **8/9** each (severity head on the checkout incident). Medians 15.1s and 44.3s.
 
 Calibration baseline: ECE is **0.182** on measured logprobs vs **0.750** on prompted verbalized probabilities (`evals/quality_pin.json`).
 
