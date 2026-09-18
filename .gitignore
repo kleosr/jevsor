@@ -13,6 +13,7 @@ dist/
 build/
 .pytest_cache/
 .mypy_cache/
+temp_auto_push.bat
 .ruff_cache/
 .coverage
 htmlcov/
@@ -28,5 +29,6 @@ credentials.json
 .DS_Store
 Thumbs.db
 .idea/
-.vscode/
 *.swp
+.gitignore
+branch_structure.json
