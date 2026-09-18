@@ -23,7 +23,7 @@ Raw JSON lives under `benchmarks/iteration_N/`. Pareto points: `benchmarks/paret
 
 | Iteration | Change | Keep? |
 | --- | --- | --- |
-| 1 | Probe-cache fingerprint; ECE on P(winner); opt-in T-scaling; agent contract docs | pending measurement |
+| 1 | ECE on P(winner); post-hoc T=4.85 on stub holdout | Keep T as opt-in. Stub accuracy still chance. See `benchmarks/iteration_1/`. |
 
 Temperature scaling is post-hoc on stored distributions. It **must not** change argmax. If a run's `choice_accuracy` moves after T, the implementation is wrong.
 

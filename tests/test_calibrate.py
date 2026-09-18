@@ -61,6 +61,17 @@ def test_scale_does_not_change_argmax() -> None:
         assert max(scaled, key=lambda k: scaled[k]) == "a"
 
 
+def test_rescale_preserves_choice_on_near_tie() -> None:
+    ans = ChoiceAnswer(
+        choice="a",
+        probabilities={"a": 0.34, "b": 0.33, "c": 0.33},
+        confidence=0.01,
+        provenance="measured",
+    )
+    out = rescale_answer(ans, 5.0)
+    assert out.choice == "a"
+
+
 def test_score_rescale_keeps_levels() -> None:
     ans = ScoreAnswer(
         score=0.4,

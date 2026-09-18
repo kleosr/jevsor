@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "note": "Native frontier only. provider=cursor is nativeness 0 and is listed under dominated_or_excluded.",
+  "points": [
+    {
+      "id": "stub-t1",
+      "iteration": 1,
+      "keep": false,
+      "dominated_by": "stub-t4.85-posthoc",
+      "provider": "stub",
+      "nativeness": 1,
+      "latency_p50_ms": 0.609,
+      "ece": 0.1314,
+      "mean_accuracy": 0.3651,
+      "cost_usd_per_mtok_assumed": 0.0
+    },
+    {
+      "id": "stub-t4.85-posthoc",
+      "iteration": 1,
+      "keep": true,
+      "provider": "stub",
+      "nativeness": 1,
+      "latency_p50_ms": 0.609,
+      "ece": 0.0205,
+      "ece_n": 100,
+      "mean_accuracy": 0.3651,
+      "choice_accuracy_eval": 0.33,
+      "fitted_temperature": 4.85,
+      "cost_usd_per_mtok_assumed": 0.0,
+      "note": "Post-hoc T on stored stub distributions. Accuracy still chance. ECE occupies one bin (~0.33)."
+    }
+  ],
+  "dominated_or_excluded": [
+    {
+      "id": "cursor-cloud-agents",
+      "nativeness": 0,
+      "reason": "second_harness; p50 is seconds; not on the native frontier"
+    }
+  ]
+}
