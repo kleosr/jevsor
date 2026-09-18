@@ -50,3 +50,64 @@ Do not put keys in the plugin. Set `JEVSOR_PROVIDER`, `JEVSOR_MODEL`, and provid
 For in-IDE use, prefer `stub` (tests), local Ollama, or an OpenAI-compatible endpoint. `JEVSOR_PROVIDER=cursor` starts a nested Cloud Agent per `evaluate` and is the wrong default.
 
 Marketplace submission needs a public repo and Cursor review — deferred.
+
+## Agent-side contract for `route.decision`
+
+The MCP server returns an envelope. The Cursor agent **must** treat it as binding. Inventing a different action is a contract break.
+
+| `decision` | Agent must | Agent must not |
+| --- | --- | --- |
+| `proceed` | Act on `routes.*.winner` with Cursor tools. | Re-ask the same heads in chat. Shop for a different option. |
+| `confirm` | Show **winner and runner_up** (and `margin`) to the user. Wait for confirmation before mutating tools (edit, shell that writes, deploy). | Treat confirm as proceed. Hide the runner-up. |
+| `human` | Stop. Paste the full envelope. No suggested action. The user clarifies state or the question. | Pick the winner anyway. “Escalate” to a stronger model or a nested Cloud Agent. |
+
+`confirm` is not `escalate`. `escalate` (evaluate kwarg) re-asks uncertain heads inside Jevsor. `confirm` is a **user** gate.
+
+## Why disagreement is `human`, not a stronger model
+
+Disagreement between independent evaluations is not a confidence signal. It means the **state is ambiguous or the question is underspecified**. A bigger model gives a second opinion; it does not add the missing fact. Only a human can rewrite the state or the head. Routing disagreement into `escalate` would “optimize” away the invariant. Do not do that.
+
+## Degrade path when MCP is unavailable
+
+Fail-closed default: `{decision: "human", degrade: "human", routes: {}}`. The agent does not roleplay `evaluate`.
+
+Split by **decision class of the action the agent was about to take**, not by model size:
+
+| Class | Examples | If MCP / evaluate is down |
+| --- | --- | --- |
+| High-risk | rollback, deploy, payments, delete, production data | **Stop.** Tell the user the decision layer is unavailable. No heuristic, no “I’ll just use Composer.” |
+| Low-risk | ticket routing, labeling, “which file looks relevant” | Agent **may** fill the same Choice/Score/Noul JSON **once** with the in-IDE model. It must say `degraded=true`, `provenance=prompted`, uncalibrated. It must not call that a Jevsor or measured result. |
+
+There is no third path that invents uniform probabilities.
+
+## Measured-mode backends
+
+In-IDE Cursor models are **always prompted** for Jevsor. Isolated logprobs require a backend that returns `top_logprobs` on a 1-token probe. `debug.measured` is that bit.
+
+| Provider | Default | Measured? |
+| --- | --- | --- |
+| `stub` | tests | yes (synthetic) |
+| `ollama` (local `/v1`, not Ollama Cloud) | llama.cpp-style | usually yes — **this is the real measured path** |
+| `openai` / `openai_compat` / `llamacpp` | OpenAI-compatible | probe; many local servers yes, many hosted no |
+| `gemini` | probe | 3.x may have withdrawn logprobs |
+| `anthropic` | prompted | no, by vendor design |
+| `cursor` (Cloud Agents API / SDK) | prompted | **no.** Agent run, not a sampler. `second_harness`. |
+
+You do not get measured mode “for free” inside Cursor chat. Point `JEVSOR_PROVIDER` at Ollama or another logprob endpoint.
+
+## Cloud Agents model sweep (optional, not native)
+
+`evals/cursor_bench.py` can call Composer and Grok 4.6 through the Cloud Agents API. That path is `debug.second_harness`. It cannot satisfy the 70 ms target. Use it only to measure prompted JSON quality.
+
+| Token | Request shape |
+| --- | --- |
+| `composer-2.5:fast` | `{id: composer-2.5, params: [{id: fast, value: true}]}` |
+| `composer-2.5:fast=false` | standard (non-fast) Composer |
+| `grok-4.6:low:fast` … `:medium:fast` `:high:fast` `:xhigh:fast` | effort + Fast (catalog default speed). `extra-high` aliases to `xhigh`. |
+
+Discover the account catalog with `GET https://api.cursor.com/v1/models`. Do not assume GPT ids exist. In-IDE, pick these models in Cursor's picker and call MCP — do not nest `Client(provider="cursor")`.
+
+## Probe cache
+
+Capability cache, not answers. Key = SHA-256 prefix of `(provider, model, endpoint)`. Scope = **MCP server process**. Chat session restart typically respawns MCP. Pin versioned model ids when the catalog offers them; a silent weight swap behind `grok-4.6` can stale the bit.
+

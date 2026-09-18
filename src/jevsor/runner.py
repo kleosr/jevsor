@@ -9,7 +9,7 @@ from typing import Any, Literal
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
 
 from jevsor.version import __version__
-from jevsor.capabilities import WIDE_CHOICE, default_logprobs, remember, remembered
+from jevsor.capabilities import WIDE_CHOICE, default_logprobs, endpoint_of, remember, remembered
 from jevsor.codecs import extract_answers_blob, measured_answer, prompted_answer
 from jevsor.contract import (
     Answer,
@@ -23,6 +23,7 @@ from jevsor.contract import (
     Response,
     Usage,
 )
+from jevsor.calibrate import rescale_answer
 from jevsor.letter import letter_ok
 from jevsor.policy import (
     EscalateMode,
@@ -57,6 +58,7 @@ class Client:
         seed: int | None = 0,
         concurrency: int = DEFAULT_CONCURRENCY,
         partial: bool = False,
+        scale_temperature: float | None = None,
         **provider_kwargs: Any,
     ) -> None:
         if isinstance(provider, str):
@@ -70,6 +72,7 @@ class Client:
         self.seed = seed
         self.concurrency = concurrency
         self.partial = partial
+        self.scale_temperature = scale_temperature
 
     def close(self) -> None:
         if self._owns:
@@ -137,7 +140,7 @@ class Client:
 
     def _logprobs_ok(self) -> bool:
         probe = getattr(self.provider, "probe_logprobs", None)
-        cached = remembered(self.provider.name, self.provider.model)
+        cached = remembered(self.provider.name, self.provider.model, endpoint_of(self.provider))
         if cached is not None:
             return cached
         if callable(probe):
@@ -145,7 +148,7 @@ class Client:
                 supported = bool(probe())
             except JevsorError:
                 supported = False
-            remember(self.provider.name, self.provider.model, supported)
+            remember(self.provider.name, self.provider.model, supported, endpoint_of(self.provider))
             return supported
         fallback = default_logprobs(self.provider.name)
         return bool(fallback)
@@ -364,7 +367,7 @@ class Client:
             top_logprobs=20,
             schema=None,
         )
-        answer = measured_answer(question, completion, mapping)
+        answer = rescale_answer(measured_answer(question, completion, mapping), self.scale_temperature)
         used = Usage(input_tokens=completion.input_tokens, output_tokens=completion.output_tokens)
         debug = QuestionDebug(mode="letter", provenance="measured", truncated=getattr(answer, "truncated", False), temperature=self.temperature, seed=self.seed)
         return answer, used, debug
@@ -409,6 +412,7 @@ class Client:
             truncated=True,
             missing_mass=0.0,
         )
+        result = rescale_answer(result, self.scale_temperature)
         debug = QuestionDebug(mode="wide-choice", provenance="measured", truncated=True, temperature=self.temperature, seed=self.seed)
         return result, usage, debug
 
