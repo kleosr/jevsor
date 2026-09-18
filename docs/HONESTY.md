@@ -11,7 +11,8 @@ jevsor copies Jev's *application contract*, not TypeSafe's sampler.
 5. **Schema is validated in code.** Jev binds the schema at the sampler. We retry malformed JSON a bounded number of times, then raise.
 6. **Cursor Cloud Agents are not a completion API.** `provider="cursor"` launches a full agent run. Native in-IDE use is MCP `evaluate` from the existing Cursor agent. See [ARCHITECTURE.md](ARCHITECTURE.md).
 7. **Isolated logprobs require a logprob backend.** Cursor's SDK does not expose them. `debug.measured` is about the MCP process's provider, not the in-IDE model.
-8. **The probe cache is not an answer cache.** It remembers whether `(provider, model)` returned logprobs. It does not reuse decisions.
+8. **The probe cache is not an answer cache.** It remembers whether SHA-256(`provider`, `model`, `endpoint`) returned logprobs, in the MCP process. It does not reuse decisions. Pin versioned model ids.
+9. **ECE is P(winner), not inverse-entropy.** `confidence` is a routing statistic (`1 - H(p)/log(K)`). Temperature scaling does not change argmax and cannot raise accuracy.
 
 ## Averaging vs consensus
 

@@ -13,10 +13,12 @@
 
 <p align="center">
   <a href="docs/ARCHITECTURE.md">Architecture</a> •
+  <a href="docs/CURSOR.md">Agent contract</a> •
   <a href="#the-decision-space">Decision Space</a> •
   <a href="#try-it">Quickstart</a> •
   <a href="#use-the-library">Usage</a> •
   <a href="#evidence-and-limits">Benchmark</a> •
+  <a href="docs/BENCHMARKS.md">Beat-Jev metrics</a> •
   <a href="evals/results/cursor_live.json">Measurements</a> •
   <a href="src/jevsor/runner.py">Read the loop</a> •
   <a href="docs/HONESTY.md">Honesty Contract</a>
@@ -205,10 +207,15 @@ uvx --from . --with mcp jevsor-mcp
 | [letter.py](src/jevsor/letter.py) | Single-token letter/digit logprob extraction and softmax normalization |
 | [codecs.py](src/jevsor/codecs.py) | Measured vs prompted decoder with distribution validation |
 | [confidence.py](src/jevsor/confidence.py) | Normalized inverse-entropy confidence calculation and three-band router |
+| [calibrate.py](src/jevsor/calibrate.py) | Opt-in temperature scaling; does not change argmax |
 | [mcp_server.py](src/jevsor/mcp_server.py) | FastMCP stdio: `evaluate` + `route` |
 | [cursor_agent.py](src/jevsor/providers/cursor_agent.py) | Optional Cloud Agents backend (second harness; not in-IDE native) |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Native Cursor split, keep/modify table, literature |
-| [cursor_bench.py](evals/cursor_bench.py) | Live Cursor model speed and accuracy benchmark |
+| [CURSOR.md](docs/CURSOR.md) | Agent `proceed`/`confirm`/`human` contract, degrade classes, measured backends |
+| [BENCHMARKS.md](docs/BENCHMARKS.md) | Independent metrics, holdout, Pareto |
+| [LIMITATIONS.md](docs/LIMITATIONS.md) | Hard constraints vs Jev's published numbers |
+| [PROMPT.md](docs/PROMPT.md) | Beat-Jev loop pins |
+| [cursor_bench.py](evals/cursor_bench.py) | Live Cursor Cloud Agents sweep (second harness) |
 | [calibration.py](evals/calibration.py) | Expected Calibration Error (ECE) and temperature-scaling report |
 
 ## Evidence and limits

@@ -20,6 +20,15 @@ from jevsor.providers.base import Completion
 
 DEFAULT_CURSOR = "https://api.cursor.com"
 TERMINAL = {"FINISHED", "ERROR", "CANCELLED", "EXPIRED"}
+EFFORT_VALUES = {
+    "low": "low",
+    "medium": "medium",
+    "high": "high",
+    "xhigh": "xhigh",
+    "extra-high": "xhigh",
+    "extra_high": "xhigh",
+    "extrahigh": "xhigh",
+}
 
 
 def _json_from_text(text: str) -> dict[str, Any] | None:
@@ -42,10 +51,41 @@ def _json_from_text(text: str) -> dict[str, Any] | None:
 
 
 def _model_payload(model: str) -> dict[str, Any]:
-    if ":" not in model:
-        return {"id": model}
-    ident, _, flag = model.partition(":")
-    return {"id": ident, "params": [{"id": flag, "value": "true"}]}
+    """Parse `id`, `id:fast`, `id:low`, `id:effort=xhigh`, `id:fast=false`.
+
+    Grok 4.6 effort tokens (low/medium/high/xhigh/extra-high) become
+    `{id: effort, value: ...}`. `fast` stays a boolean param. `k=v` is literal.
+    Discover the catalog with GET /v1/models — this only shapes the request.
+    """
+    raw = model.strip()
+    if not raw:
+        raise ValueError("model id is empty")
+    ident, *parts = raw.split(":")
+    params: list[dict[str, str]] = []
+    for part in parts:
+        if not part:
+            continue
+        if "=" in part:
+            pid, _, value = part.partition("=")
+            pid, value = pid.strip(), value.strip()
+            key = pid.lower()
+            token = value.lower().replace("_", "-")
+            if key in {"effort", "thinking"} and token in EFFORT_VALUES:
+                params.append({"id": "effort", "value": EFFORT_VALUES[token]})
+            else:
+                params.append({"id": pid, "value": value})
+            continue
+        token = part.strip().lower().replace("_", "-")
+        if token in EFFORT_VALUES:
+            params.append({"id": "effort", "value": EFFORT_VALUES[token]})
+        elif token == "fast":
+            params.append({"id": "fast", "value": "true"})
+        else:
+            params.append({"id": part, "value": "true"})
+    payload: dict[str, Any] = {"id": ident}
+    if params:
+        payload["params"] = params
+    return payload
 
 
 def _extract_text(run: dict[str, Any], conversation: dict[str, Any] | None) -> str:

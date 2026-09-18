@@ -20,12 +20,20 @@ You gather thin state with native tools, then call MCP `evaluate`.
 4. Call MCP `route` on the `answers`, passing `disagreed` from `debug` when present. Branch on `decision`: proceed / confirm / human. Use `winner` and `runner_up`; do not invent a threshold.
 5. **Execute with Cursor tools.** Thresholds and side effects stay out of the prompt.
 
+## Agent contract
+
+When MCP `route` returns `decision`:
+
+- `proceed` — act on `winner`.
+- `confirm` — show winner **and** `runner_up` to the user; wait before mutating tools.
+- `human` — stop. Show the envelope. Do not pick a winner. Do not send disagreement to a stronger model.
+
 ## Failure
 
 - If `evaluate` or `route` returns `degrade: "human"` (or an `error`), stop. Decision is human. Do not fill in probabilities yourself.
-- If the `jevsor` MCP server is missing or unreachable, say so and ask the user. Do not roleplay an evaluate.
-- Isolated logprobs only exist if `debug.measured` is true. In Cursor chat that is usually false: the in-IDE model is not a logprob API. Prompted JSON is the native path.
-- Do not average `measured` and `prompted`. If `debug.disagreed` is nonempty, `route` already treats those heads as human.
+- If the `jevsor` MCP server is missing or unreachable: **high-risk** work stops and you tell the user. **Low-risk** labeling may be done once by the in-IDE model, labeled `degraded=true` / prompted / uncalibrated — never called Jevsor or measured.
+- Isolated logprobs only exist if `debug.measured` is true. In Cursor chat that is usually false. Point MCP at Ollama (or another logprob `/v1`) for measured mode.
+- Do not average `measured` and `prompted`. If `debug.disagreed` is nonempty, `route` already treats those heads as human. That is ambiguity, not a cue to nest Cloud Agents.
 
 ## Rules
 
