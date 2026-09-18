@@ -1,0 +1,528 @@
+{
+  "provider": "cursor",
+  "gateway": "Cursor Cloud Agents API https://api.cursor.com (not Token Harbor)",
+  "models": [
+    {
+      "model": "composer-2.5:fast",
+      "ok": true,
+      "accuracy": 0.8889,
+      "hits": 8,
+      "n_questions": 9,
+      "median_ms": 15079.5,
+      "total_ms": 92784.4,
+      "cases": [
+        {
+          "id": "payouts",
+          "ms": 63758.2,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.62
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 1.12,
+              "confidence": 0.31
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.9
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "checkout_502",
+          "ms": 15079.5,
+          "error": null,
+          "answers": {
+            "service": {
+              "ok": true,
+              "type": "choice",
+              "choice": "payments_api",
+              "confidence": 0.43
+            },
+            "rollback": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.85
+            },
+            "severity": {
+              "ok": false,
+              "type": "score",
+              "score": 1.9,
+              "confidence": 0.35
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "invoice_where",
+          "ms": 11061.7,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.71
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.08
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 0.09,
+              "confidence": 0.72
+            }
+          },
+          "provenance": "prompted"
+        }
+      ]
+    },
+    {
+      "model": "composer-2.5:fast=false",
+      "ok": true,
+      "accuracy": 0.8889,
+      "hits": 8,
+      "n_questions": 9,
+      "median_ms": 44309.1,
+      "total_ms": 122929.9,
+      "cases": [
+        {
+          "id": "payouts",
+          "ms": 61785.0,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.5
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 1.12,
+              "confidence": 0.31
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.91
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "checkout_502",
+          "ms": 44309.1,
+          "error": null,
+          "answers": {
+            "service": {
+              "ok": true,
+              "type": "choice",
+              "choice": "payments_api",
+              "confidence": 0.41
+            },
+            "rollback": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.88
+            },
+            "severity": {
+              "ok": false,
+              "type": "score",
+              "score": 1.86,
+              "confidence": 0.4
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "invoice_where",
+          "ms": 13985.5,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.83
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.06
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 0.1,
+              "confidence": 0.71
+            }
+          },
+          "provenance": "prompted"
+        }
+      ]
+    },
+    {
+      "model": "grok-4.6:low:fast",
+      "ok": true,
+      "accuracy": 1.0,
+      "hits": 9,
+      "n_questions": 9,
+      "median_ms": 28965.3,
+      "total_ms": 131503.0,
+      "cases": [
+        {
+          "id": "payouts",
+          "ms": 73694.1,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.39
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 1.28,
+              "confidence": 0.26
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.88
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "checkout_502",
+          "ms": 26500.3,
+          "error": null,
+          "answers": {
+            "service": {
+              "ok": true,
+              "type": "choice",
+              "choice": "payments_api",
+              "confidence": 0.44
+            },
+            "rollback": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.86
+            },
+            "severity": {
+              "ok": true,
+              "type": "score",
+              "score": 2.19,
+              "confidence": 0.37
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "invoice_where",
+          "ms": 28965.3,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.73
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.06
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 0.09,
+              "confidence": 0.72
+            }
+          },
+          "provenance": "prompted"
+        }
+      ]
+    },
+    {
+      "model": "grok-4.6:medium:fast",
+      "ok": true,
+      "accuracy": 1.0,
+      "hits": 9,
+      "n_questions": 9,
+      "median_ms": 10620.5,
+      "total_ms": 86010.5,
+      "cases": [
+        {
+          "id": "payouts",
+          "ms": 62217.6,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.37
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 1.17,
+              "confidence": 0.26
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.88
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "checkout_502",
+          "ms": 10620.5,
+          "error": null,
+          "answers": {
+            "service": {
+              "ok": true,
+              "type": "choice",
+              "choice": "payments_api",
+              "confidence": 0.38
+            },
+            "rollback": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.86
+            },
+            "severity": {
+              "ok": true,
+              "type": "score",
+              "score": 2.17,
+              "confidence": 0.36
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "invoice_where",
+          "ms": 8671.6,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.7
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.06
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 0.08,
+              "confidence": 0.74
+            }
+          },
+          "provenance": "prompted"
+        }
+      ]
+    },
+    {
+      "model": "grok-4.6:high:fast",
+      "ok": true,
+      "accuracy": 1.0,
+      "hits": 9,
+      "n_questions": 9,
+      "median_ms": 41233.3,
+      "total_ms": 136854.4,
+      "cases": [
+        {
+          "id": "payouts",
+          "ms": 63871.7,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.39
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 1.17,
+              "confidence": 0.26
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.92
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "checkout_502",
+          "ms": 41233.3,
+          "error": null,
+          "answers": {
+            "service": {
+              "ok": true,
+              "type": "choice",
+              "choice": "payments_api",
+              "confidence": 0.44
+            },
+            "rollback": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.88
+            },
+            "severity": {
+              "ok": true,
+              "type": "score",
+              "score": 2.05,
+              "confidence": 0.37
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "invoice_where",
+          "ms": 26377.3,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.76
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.06
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 0.08,
+              "confidence": 0.74
+            }
+          },
+          "provenance": "prompted"
+        }
+      ]
+    },
+    {
+      "model": "grok-4.6:xhigh:fast",
+      "ok": true,
+      "accuracy": 1.0,
+      "hits": 9,
+      "n_questions": 9,
+      "median_ms": 15987.7,
+      "total_ms": 92859.1,
+      "cases": [
+        {
+          "id": "payouts",
+          "ms": 63630.9,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.39
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 1.22,
+              "confidence": 0.22
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.93
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "checkout_502",
+          "ms": 15987.7,
+          "error": null,
+          "answers": {
+            "service": {
+              "ok": true,
+              "type": "choice",
+              "choice": "payments_api",
+              "confidence": 0.43
+            },
+            "rollback": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.88
+            },
+            "severity": {
+              "ok": true,
+              "type": "score",
+              "score": 2.19,
+              "confidence": 0.31
+            }
+          },
+          "provenance": "prompted"
+        },
+        {
+          "id": "invoice_where",
+          "ms": 10067.6,
+          "error": null,
+          "answers": {
+            "department": {
+              "ok": true,
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.76
+            },
+            "is_urgent": {
+              "ok": true,
+              "type": "noul",
+              "noul": 0.06
+            },
+            "frustration": {
+              "ok": true,
+              "type": "score",
+              "score": 0.09,
+              "confidence": 0.72
+            }
+          },
+          "provenance": "prompted"
+        }
+      ]
+    }
+  ],
+  "pick": {
+    "recommended": "grok-4.6:medium:fast",
+    "best_quality": "grok-4.6:medium:fast",
+    "fastest": "grok-4.6:medium:fast",
+    "rule": "highest accuracy; if within one question, pick lowest median_ms"
+  }
+}

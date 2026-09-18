@@ -34,7 +34,8 @@
     {
       "id": "cursor-cloud-agents",
       "nativeness": 0,
-      "reason": "second_harness; p50 is seconds; not on the native frontier"
+      "reason": "second_harness; 3-case sweep p50 10–44s; grok 9/9 composer 8/9; not on the native frontier",
+      "artifact": "evals/results/cursor_grok_composer_sweep.json"
     }
   ]
 }

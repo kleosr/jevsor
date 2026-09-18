@@ -5,7 +5,7 @@ Jevsor copies Jev's **application contract**, not TypeSafe's sampler, RLCD, pric
 ## Not tested here
 
 - Hosted TypeSafe Jev (clean-room: this library never calls it).
-- Full Cloud Agents sweeps of grok-4.6 (low…xhigh) × composer on the 126-label holdout. Each `evaluate` is a nested agent run (seconds to tens of seconds). A complete live matrix is a cost/latency experiment, not a 70 ms decision layer. `evals/cursor_bench.py` is the 3-case prompted sweep when `CURSOR_API_KEY` is set.
+- Full Cloud Agents sweeps of grok-4.6 (low…xhigh) × composer on the **126-label** holdout. A 3-case prompted sweep did run (`evals/results/cursor_grok_composer_sweep.json`): Grok 9/9 at every effort, Composer 8/9, medians **10–44 s**. That is nativeness 0 and not a 70 ms layer.
 - Ollama Cloud (logprobs dropped). Local Ollama only when a daemon is present.
 - Semantic or answer caches (rejected).
 
