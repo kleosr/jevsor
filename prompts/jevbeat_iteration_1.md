@@ -19,4 +19,4 @@ Copy of `docs/PROMPT.md` plus what this iteration proved.
 
 ## Iteration 2 focus
 
-**Accuracy**, with a real backend. Native: Ollama/llama.cpp logprobs. Optional measurement-only: Composer + Grok 4.6 low→xhigh via Cloud Agents (nativeness 0, record p50 in seconds).
+**Accuracy**, with a real backend. Native: Ollama/llama.cpp logprobs. Cloud Agents 3-case sweep already ran: Grok 4.6 Fast 9/9 at low/medium/high/xhigh (fastest median 10.6 s on medium); Composer 8/9. Still nativeness 0 and seconds, not 70 ms. Do not put it on the native Pareto frontier. Do not treat 9/9 on 3 tickets as 67.8% on 126 labels.
