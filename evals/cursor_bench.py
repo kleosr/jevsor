@@ -23,10 +23,10 @@ from jevsor.errors import JevsorError
 MODELS = [
     "composer-2.5:fast",
     "composer-2.5:fast=false",
-    "grok-4.6:low",
-    "grok-4.6:medium",
-    "grok-4.6:high",
-    "grok-4.6:xhigh",
+    "grok-4.6:low:fast",
+    "grok-4.6:medium:fast",
+    "grok-4.6:high:fast",
+    "grok-4.6:xhigh:fast",
 ]
 
 
@@ -166,7 +166,7 @@ def _run_model(model: str, selected: list[dict[str, Any]]) -> dict[str, Any]:
         fanout="batch",
         seed=None,
         api_key=key,
-        timeout=180.0,
+        timeout=300.0,
     ) as client:
         for case in selected:
             start = time.perf_counter()

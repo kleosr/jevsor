@@ -26,6 +26,6 @@ Jevsor copies Jev's **application contract**, not TypeSafe's sampler, RLCD, pric
 
 ## What would be needed to verify further
 
-- A local llama.cpp/Ollama box for measured ECE on the 126-label set.
+- A local llama.cpp/Ollama box for measured ECE and **accuracy** on the 126-label set (iteration 2). Stub T-scaling already puts chance-level ECE ≤ 0.05; that is not a model result.
 - A Cursor completions API with logprobs (does not exist in public docs).
 - TypeSafe's workflow JSON, if they publish it, for an apples-to-apples accuracy number — still without calling their sampler.

@@ -186,10 +186,15 @@ def posthoc_temperature(row: dict[str, Any], *, fit_split: int) -> dict[str, Any
     fitted = fit_distribution_temperature(train)
     confs: list[float] = []
     correct: list[bool] = []
+    flips = 0
     for probs, label in test:
         scaled = scale_distribution(probs, fitted)
-        confs.append(max(scaled.values()))
-        correct.append(max(scaled, key=lambda k: scaled[k]) == label)
+        original = max(probs, key=lambda k: probs[k])
+        rounded = max(scaled, key=lambda k: scaled[k])
+        if rounded != original:
+            flips += 1
+        confs.append(float(scaled.get(original, 0.0)))
+        correct.append(original == label)
     ece, table = expected_calibration_error(confs, correct)
     acc = sum(correct) / len(correct)
     return {
@@ -199,7 +204,8 @@ def posthoc_temperature(row: dict[str, Any], *, fit_split: int) -> dict[str, Any
         "fitted_temperature": fitted,
         "ece_maxprob": round(float(ece), 4),
         "choice_accuracy": round(acc, 4),
-        "note": "T-scaling is post-hoc on stored distributions. Argmax (accuracy) must not change.",
+        "rounded_argmax_flips": flips,
+        "note": "T-scaling is post-hoc. Accuracy uses the original argmax; rounding must not retie the winner.",
         "reliability": table,
     }
 

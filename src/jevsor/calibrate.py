@@ -27,11 +27,10 @@ def rescale_answer(answer: Answer, temperature: float | None) -> Answer:
         return answer.model_copy(update={"noul": validate_noul(scaled["yes"])})
     if isinstance(answer, ChoiceAnswer):
         probs = scale_distribution(answer.probabilities, temperature)
-        choice = max(probs, key=lambda k: probs[k])
         return answer.model_copy(
             update={
                 "probabilities": probs,
-                "choice": choice,
+                "choice": answer.choice,
                 "confidence": confidence_from_distribution(probs),
             }
         )

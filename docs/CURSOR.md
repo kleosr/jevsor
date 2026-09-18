@@ -103,7 +103,7 @@ You do not get measured mode “for free” inside Cursor chat. Point `JEVSOR_PR
 | --- | --- |
 | `composer-2.5:fast` | `{id: composer-2.5, params: [{id: fast, value: true}]}` |
 | `composer-2.5:fast=false` | standard (non-fast) Composer |
-| `grok-4.6:low` … `:medium` `:high` `:xhigh` | `{id: grok-4.6, params: [{id: effort, value}]}`. `extra-high` aliases to `xhigh`. |
+| `grok-4.6:low:fast` … `:medium:fast` `:high:fast` `:xhigh:fast` | effort + Fast (catalog default speed). `extra-high` aliases to `xhigh`. |
 
 Discover the account catalog with `GET https://api.cursor.com/v1/models`. Do not assume GPT ids exist. In-IDE, pick these models in Cursor's picker and call MCP — do not nest `Client(provider="cursor")`.
 

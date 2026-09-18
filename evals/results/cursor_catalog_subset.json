@@ -1,0 +1,82 @@
+{
+  "grok-4.6": {
+    "parameters": [
+      {
+        "id": "effort",
+        "displayName": "Effort",
+        "values": [
+          {
+            "value": "low",
+            "displayName": "Low"
+          },
+          {
+            "value": "medium",
+            "displayName": "Medium"
+          },
+          {
+            "value": "high",
+            "displayName": "High"
+          },
+          {
+            "value": "xhigh",
+            "displayName": "Extra High"
+          }
+        ]
+      },
+      {
+        "id": "fast",
+        "displayName": "Fast",
+        "values": [
+          {
+            "value": "false"
+          },
+          {
+            "value": "true",
+            "displayName": "Fast\u200b\u200b"
+          }
+        ]
+      }
+    ],
+    "default_variant": {
+      "params": [
+        {
+          "id": "effort",
+          "value": "high"
+        },
+        {
+          "id": "fast",
+          "value": "true"
+        }
+      ],
+      "displayName": "Cursor Grok 4.6",
+      "isDefault": true
+    }
+  },
+  "composer-2.5": {
+    "parameters": [
+      {
+        "id": "fast",
+        "displayName": "Fast",
+        "values": [
+          {
+            "value": "false"
+          },
+          {
+            "value": "true",
+            "displayName": "Fast"
+          }
+        ]
+      }
+    ],
+    "default_variant": {
+      "params": [
+        {
+          "id": "fast",
+          "value": "true"
+        }
+      ],
+      "displayName": "Composer 2.5",
+      "isDefault": true
+    }
+  }
+}
