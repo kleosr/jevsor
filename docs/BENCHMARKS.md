@@ -29,7 +29,20 @@ Temperature scaling is post-hoc on stored distributions. It **must not** change 
 
 ## Cursor Cloud Agents
 
-`evals/cursor_bench.py` sweeps `composer-2.5:fast`, `composer-2.5:fast=false`, and `grok-4.6` at effort `low|medium|high|xhigh` when `CURSOR_API_KEY` is set. Each `complete()` is a full agent run (seconds). That sweep **cannot** meet p50 ≤ 70 ms and is nativeness 0. Prior 3-case live file: `evals/results/cursor_live.json` (~13–18 s median).
+`evals/cursor_bench.py` sweeps Composer and Grok 4.6 effort `low|medium|high|xhigh` (Fast) when `CURSOR_API_KEY` is set. Each `complete()` is a full agent run (seconds). That sweep **cannot** meet p50 ≤ 70 ms and is nativeness 0.
+
+Iteration-1 3-case sweep (`evals/results/cursor_grok_composer_sweep.json`, ~11 min wall):
+
+| Model | Hits | Median follow-up |
+| --- | --- | --- |
+| `composer-2.5:fast` | 8/9 | 15.1 s |
+| `composer-2.5:fast=false` | 8/9 | 44.3 s |
+| `grok-4.6:low:fast` | 9/9 | 29.0 s |
+| `grok-4.6:medium:fast` | 9/9 | **10.6 s** |
+| `grok-4.6:high:fast` | 9/9 | 41.2 s |
+| `grok-4.6:xhigh:fast` | 9/9 | 16.0 s |
+
+Pick (highest accuracy, then lowest median): `grok-4.6:medium:fast`. This is **not** a 70 ms decision layer and is not on the native Pareto frontier. Prior 3-model file: `evals/results/cursor_live.json`.
 
 ## How to run
 
